@@ -1,0 +1,91 @@
+.stores-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.stores-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.stores-header-right {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.stores-title {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.stores-username {
+  color: #666;
+  margin-right: 0.5rem;
+}
+
+.stores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.store-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.store-card:hover {
+  transform: translateY(-2px);
+}
+
+.store-name {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+}
+
+.store-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+}
+
+.store-badge.open {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.store-badge.closed {
+  background: #fce4ec;
+  color: #c62828;
+}
+
+.store-action {
+  margin: 1rem 0 0;
+  color: #FF6B35;
+  font-weight: 500;
+}
+
+.btn-primary {
+  padding: 0.5rem 1rem;
+  background: #FF6B35;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-secondary {
+  padding: 0.5rem 1rem;
+  background: #eee;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}

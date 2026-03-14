@@ -1,13 +1,13 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
 import Register from './pages/Register'
-import Stores from './pages/Stores'
 import Products from './pages/Products'
 import Orders from './pages/Orders'
+import Stores from './pages/Stores'
 
-function PrivateRoute({ children }) {
+function PrivateRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem('token')
-  return token ? children : <Navigate to="/login" />
+  return token ? <>{children}</> : <Navigate to="/login" />
 }
 
 export default function App() {
