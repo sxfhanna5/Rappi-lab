@@ -30,13 +30,15 @@ export default function Stores() {
   return (
     <div className="stores-container">
       <div className="stores-header">
-        <h2 className="stores-title">🏪 Tiendas disponibles</h2>
-        <div className="stores-header-right">
-          <span className="stores-username">Hola, {user.name}</span>
-          <button className="btn-primary" onClick={() => navigate('/orders')}>Mis órdenes</button>
-          <button className="btn-secondary" onClick={logout}>Salir</button>
-        </div>
-      </div>
+  <div className="stores-header-left">
+    <h2 className="stores-title">Tiendas disponibles</h2>
+    <p className="stores-greeting">Hola, <strong>{user.name}</strong></p>
+  </div>
+  <div className="stores-header-right">
+    <button className="btn-primary" onClick={() => navigate('/orders')}>Mis órdenes</button>
+    <button className="btn-secondary" onClick={logout}>Salir</button>
+  </div>
+</div>
       <div className="stores-grid">
         {stores.map(store => (
           <div key={store.id} className="store-card"
@@ -45,7 +47,7 @@ export default function Stores() {
             <span className={`store-badge ${store.is_open ? 'open' : 'closed'}`}>
               {store.is_open ? '🟢 Abierta' : '🔴 Cerrada'}
             </span>
-            <p className="store-action">Ver productos →</p>
+            <p className="store-action">Ver productos</p>
           </div>
         ))}
       </div>

@@ -64,7 +64,7 @@ export default function Products() {
   return (
     <div className="products-container">
       <button className="back-btn" onClick={() => navigate('/stores')}>← Volver</button>
-      <h2 className="products-title">🛍️ Productos</h2>
+      <h2 className="products-title">Productos</h2>
       {msg && <p className="products-msg">{msg}</p>}
       <div className="products-layout">
         <div className="products-list">
