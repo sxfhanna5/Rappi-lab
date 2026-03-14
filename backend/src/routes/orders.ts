@@ -1,19 +1,21 @@
-const express = require('express')
-const router = express.Router()
-const pool = require('../config/db')
-const { authenticateToken, requireRole } = require('../middleware/auth')
+import { Router, Request, Response } from 'express'
+import pool from '../config/db'
+import { authenticateToken, requireRole, AuthRequest } from '../middleware/auth'
 
-// POST /api/orders — consumidor crea orden
-router.post('/', authenticateToken, requireRole('consumer'), async (req, res) => {
-  const { storeId, items } = req.body // items: [{ productId, quantity }]
-  if (!storeId || !items?.length) return res.status(400).json({ error: 'storeId e items requeridos' })
+const router = Router()
+
+router.post('/', authenticateToken, requireRole('consumer'), async (req: AuthRequest, res: Response): Promise<void> => {
+  const { storeId, items } = req.body
+  if (!storeId || !items?.length) {
+    res.status(400).json({ error: 'storeId e items requeridos' })
+    return
+  }
   try {
     const orderResult = await pool.query(
       'INSERT INTO orders (consumer_id, store_id) VALUES ($1, $2) RETURNING *',
-      [req.user.id, storeId]
+      [req.user!.id, storeId]
     )
     const order = orderResult.rows[0]
-
     for (const item of items) {
       await pool.query(
         'INSERT INTO order_items (order_id, product_id, quantity) VALUES ($1, $2, $3)',
@@ -26,14 +28,13 @@ router.post('/', authenticateToken, requireRole('consumer'), async (req, res) =>
   }
 })
 
-// GET /api/orders/my — órdenes del consumidor logueado
-router.get('/my', authenticateToken, requireRole('consumer'), async (req, res) => {
+router.get('/my', authenticateToken, requireRole('consumer'), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const result = await pool.query(
       `SELECT o.*, s.name as store_name FROM orders o
        JOIN stores s ON o.store_id = s.id
        WHERE o.consumer_id = $1 ORDER BY o.created_at DESC`,
-      [req.user.id]
+      [req.user!.id]
     )
     res.json(result.rows)
   } catch (err) {
@@ -41,10 +42,9 @@ router.get('/my', authenticateToken, requireRole('consumer'), async (req, res) =
   }
 })
 
-// GET /api/orders/store — órdenes de la tienda del store logueado
-router.get('/store', authenticateToken, requireRole('store'), async (req, res) => {
+router.get('/store', authenticateToken, requireRole('store'), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const storeResult = await pool.query('SELECT id FROM stores WHERE user_id = $1', [req.user.id])
+    const storeResult = await pool.query('SELECT id FROM stores WHERE user_id = $1', [req.user!.id])
     const storeId = storeResult.rows[0]?.id
     const result = await pool.query(
       'SELECT * FROM orders WHERE store_id = $1 ORDER BY created_at DESC',
@@ -56,8 +56,7 @@ router.get('/store', authenticateToken, requireRole('store'), async (req, res) =
   }
 })
 
-// GET /api/orders/available — delivery ve órdenes pending
-router.get('/available', authenticateToken, requireRole('delivery'), async (req, res) => {
+router.get('/available', authenticateToken, requireRole('delivery'), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const result = await pool.query(
       `SELECT o.*, s.name as store_name FROM orders o
@@ -70,12 +69,11 @@ router.get('/available', authenticateToken, requireRole('delivery'), async (req,
   }
 })
 
-// GET /api/orders/accepted — delivery ve sus órdenes aceptadas
-router.get('/accepted', authenticateToken, requireRole('delivery'), async (req, res) => {
+router.get('/accepted', authenticateToken, requireRole('delivery'), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const result = await pool.query(
       'SELECT * FROM orders WHERE delivery_id = $1 ORDER BY created_at DESC',
-      [req.user.id]
+      [req.user!.id]
     )
     res.json(result.rows)
   } catch (err) {
@@ -83,13 +81,14 @@ router.get('/accepted', authenticateToken, requireRole('delivery'), async (req, 
   }
 })
 
-// GET /api/orders/:id — detalle de una orden con sus items
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
     const orderResult = await pool.query('SELECT * FROM orders WHERE id = $1', [req.params.id])
     const order = orderResult.rows[0]
-    if (!order) return res.status(404).json({ error: 'Orden no encontrada' })
-
+    if (!order) {
+      res.status(404).json({ error: 'Orden no encontrada' })
+      return
+    }
     const itemsResult = await pool.query(
       `SELECT oi.*, p.name as product_name, p.price FROM order_items oi
        JOIN products p ON oi.product_id = p.id
@@ -102,23 +101,25 @@ router.get('/:id', authenticateToken, async (req, res) => {
   }
 })
 
-// PATCH /api/orders/:id/status — actualizar estado
-router.patch('/:id/status', authenticateToken, async (req, res) => {
+router.patch('/:id/status', authenticateToken, async (req: AuthRequest, res: Response): Promise<void> => {
   const { status } = req.body
   try {
-    let query, params
-    if (status === 'accepted' && req.user.role === 'delivery') {
-      query = 'UPDATE orders SET status = $1, delivery_id = $2 WHERE id = $3 RETURNING *'
-      params = [status, req.user.id, req.params.id]
+    let result
+    if (status === 'accepted' && req.user!.role === 'delivery') {
+      result = await pool.query(
+        'UPDATE orders SET status = $1, delivery_id = $2 WHERE id = $3 RETURNING *',
+        [status, req.user!.id, req.params.id]
+      )
     } else {
-      query = 'UPDATE orders SET status = $1 WHERE id = $2 RETURNING *'
-      params = [status, req.params.id]
+      result = await pool.query(
+        'UPDATE orders SET status = $1 WHERE id = $2 RETURNING *',
+        [status, req.params.id]
+      )
     }
-    const result = await pool.query(query, params)
     res.json(result.rows[0])
   } catch (err) {
     res.status(500).json({ error: 'Error al actualizar estado' })
   }
 })
 
-module.exports = router
+export default router
