@@ -31,7 +31,7 @@ interface NewProduct {
 const statusLabel: Record<string, string> = {
   pending: '⏳ Pendiente',
   accepted: '✅ Aceptada',
-  preparing: '🚗 En camino',
+  preparing: '🧑‍🍳 Preparando',
   ready: '📦 Lista para recoger',
   delivered: '🎉 Entregada',
   declined: '❌ Rechazada'
