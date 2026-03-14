@@ -12,10 +12,10 @@ interface Order {
 
 const statusLabel: Record<string, string> = {
   pending: '⏳ Pendiente',
-  accepted: '🚗 Aceptada',
-  preparing: '👨‍🍳 Preparando',
-  ready: '✅ Lista',
-  delivered: '📦 Entregada',
+  accepted: '✅ Aceptada',
+  preparing: '🚗 En camino',
+  ready: '📦 Lista para recoger',
+  delivered: '🎉 Entregada',
   declined: '❌ Rechazada'
 }
 

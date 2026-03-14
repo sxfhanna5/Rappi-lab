@@ -30,11 +30,11 @@ interface NewProduct {
 
 const statusLabel: Record<string, string> = {
   pending: '⏳ Pendiente',
-  accepted: 'En camino',
-  preparing: 'Preparando',
-  ready: 'Lista',
-  delivered: '✅ Entregada',
-  declined: 'Rechazada'
+  accepted: '✅ Aceptada',
+  preparing: '🚗 En camino',
+  ready: '📦 Lista para recoger',
+  delivered: '🎉 Entregada',
+  declined: '❌ Rechazada'
 }
 
 export default function Dashboard() {
