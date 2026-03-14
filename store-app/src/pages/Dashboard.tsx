@@ -30,9 +30,9 @@ interface NewProduct {
 
 const statusLabel: Record<string, string> = {
   pending: '⏳ Pendiente',
-  accepted: '✅ Aceptada',
+  accepted: '✅ Aceptada por delivery',
   preparing: '🧑‍🍳 Preparando',
-  ready: '📦 Lista para recoger',
+  ready: '🛵 Lista para recoger',
   delivered: '🎉 Entregada',
   declined: '❌ Rechazada'
 }
@@ -47,15 +47,11 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const user = JSON.parse(localStorage.getItem('user') || '{}')
 
-useEffect(() => {
-  loadData()
-
-  const interval = setInterval(() => {
+  useEffect(() => {
     loadData()
-  }, 10000)
-
-  return () => clearInterval(interval)
-}, [])
+    const interval = setInterval(() => { loadData() }, 10000)
+    return () => clearInterval(interval)
+  }, [])
 
   const loadData = async () => {
     const [storeRes, ordersRes] = await Promise.all([
@@ -103,12 +99,12 @@ useEffect(() => {
 
   return (
     <div className="dashboard-container">
-
-      {/* Header igual que Consumer */}
       <div className="dashboard-header">
         <div className="dashboard-header-left">
           <h2 className="dashboard-title">{store?.name || 'Mi Tienda'}</h2>
-          <p className="dashboard-greeting">Hola, <span className="dashboard-greeting-name">{user.name}</span></p>
+          <p className="dashboard-greeting">
+            Hola, <span className="dashboard-greeting-name">{user.name}</span>
+          </p>
         </div>
         <div className="dashboard-header-right">
           <button
@@ -121,7 +117,6 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="tabs">
         <button
           className={`tab ${tab === 'products' ? 'active' : ''}`}
@@ -137,10 +132,8 @@ useEffect(() => {
         </button>
       </div>
 
-      {/* Tab Productos */}
       {tab === 'products' && (
         <div>
-          {/* Card agregar producto */}
           <div className="product-form-card">
             <h3 className="form-title">Agregar producto</h3>
             {msg && <p className="form-msg">{msg}</p>}
@@ -170,7 +163,6 @@ useEffect(() => {
             </form>
           </div>
 
-          {/* Lista de productos */}
           <div className="items-list">
             {products.length === 0 && <p className="empty-msg">No hay productos aún</p>}
             {products.map(p => (
@@ -186,7 +178,6 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Tab Órdenes */}
       {tab === 'orders' && (
         <div className="items-list">
           {orders.length === 0 && <p className="empty-msg-centered">No hay órdenes aún</p>}
@@ -198,11 +189,13 @@ useEffect(() => {
                 <p className="item-price-small">{new Date(order.created_at).toLocaleString()}</p>
               </div>
               <div className="order-actions">
-                {order.status === 'pending' && (
+                {/* La tienda prepara cuando el delivery acepta */}
+                {order.status === 'accepted' && (
                   <button className="btn-black" onClick={() => updateOrderStatus(order.id, 'preparing')}>
                     Comenzar a preparar
                   </button>
                 )}
+                {/* La tienda marca como lista cuando termina */}
                 {order.status === 'preparing' && (
                   <button className="btn-black" onClick={() => updateOrderStatus(order.id, 'ready')}>
                     Marcar como lista

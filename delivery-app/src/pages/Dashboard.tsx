@@ -22,8 +22,8 @@ interface OrderDetail extends Order {
 const statusLabel: Record<string, string> = {
   pending: '⏳ Pendiente',
   accepted: '✅ Aceptada',
-  preparing: '🛵 En camino',
-  ready: '📦 Recogido',
+  preparing: '🧑‍🍳 Preparando',
+  ready: '🛵 Lista para recoger',
   delivered: '🎉 Entregada',
   declined: '❌ Rechazada'
 }
@@ -37,7 +37,11 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const user = JSON.parse(localStorage.getItem('user') || '{}')
 
-  useEffect(() => { loadData() }, [])
+  useEffect(() => {
+    loadData()
+    const interval = setInterval(() => { loadData() }, 10000)
+    return () => clearInterval(interval)
+  }, [])
 
   const loadData = async () => {
     const [availRes, accRes] = await Promise.all([
@@ -73,8 +77,6 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-container">
-
-      {/* Header */}
       <div className="dashboard-header">
         <div className="dashboard-header-left">
           <h2 className="dashboard-title">Mis entregas</h2>
@@ -87,7 +89,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Modal detalle */}
       {selectedOrder && orderDetail && (
         <div className="modal-overlay">
           <div className="modal-card">
@@ -106,26 +107,18 @@ export default function Dashboard() {
               </div>
             ))}
             <div className="modal-actions">
+              {/* Delivery acepta o rechaza */}
               {orderDetail.status === 'pending' && (
                 <>
                   <button className="btn-green" onClick={() => updateStatus(selectedOrder, 'accepted')}>
-                    Aceptar
+                    Aceptar orden
                   </button>
                   <button className="btn-red" onClick={() => updateStatus(selectedOrder, 'declined')}>
                     Rechazar
                   </button>
                 </>
               )}
-              {orderDetail.status === 'accepted' && (
-                <button className="btn-green" onClick={() => updateStatus(selectedOrder, 'preparing')}>
-                  Marcar como en camino
-                </button>
-              )}
-              {orderDetail.status === 'preparing' && (
-                <button className="btn-green" onClick={() => updateStatus(selectedOrder, 'ready')}>
-                  Marcar como lista para recoger
-                </button>
-              )}
+              {/* Delivery recoge cuando la tienda la marca como lista */}
               {orderDetail.status === 'ready' && (
                 <button className="btn-green" onClick={() => updateStatus(selectedOrder, 'delivered')}>
                   Marcar como entregada
@@ -137,7 +130,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Tabs */}
       <div className="tabs">
         <button
           className={`tab ${tab === 'available' ? 'active' : ''}`}
@@ -153,7 +145,6 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* Lista */}
       <div className="orders-list">
         {tab === 'available' && (
           available.length === 0
