@@ -1,20 +1,19 @@
 const express = require('express')
-const cors = require('cors')
 require('dotenv').config()
 
 const app = express()
 
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}))
-
+// CORS manual - debe ir PRIMERO antes de cualquier otra cosa
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*')
-  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-  if (req.method === 'OPTIONS') return res.sendStatus(200)
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  res.setHeader('Access-Control-Max-Age', '86400')
+  
+  // Responder inmediatamente a peticiones preflight OPTIONS
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end()
+  }
   next()
 })
 
