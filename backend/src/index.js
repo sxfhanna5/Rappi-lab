@@ -4,7 +4,27 @@ require('dotenv').config()
 
 const app = express()
 
-app.use(cors())
+// Lista de dominios permitidos
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'https://rappi-lab-consumer.vercel.app',
+  'https://rappi-lab-store.vercel.app',
+  'https://rappi-lab-delivery.vercel.app'
+]
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true)
+    } else {
+      callback(new Error('No permitido por CORS'))
+    }
+  },
+  credentials: true
+}))
+
 app.use(express.json())
 
 // Rutas
