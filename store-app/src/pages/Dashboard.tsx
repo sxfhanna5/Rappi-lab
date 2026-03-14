@@ -47,7 +47,15 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const user = JSON.parse(localStorage.getItem('user') || '{}')
 
-  useEffect(() => { loadData() }, [])
+useEffect(() => {
+  loadData()
+
+  const interval = setInterval(() => {
+    loadData()
+  }, 10000)
+
+  return () => clearInterval(interval)
+}, [])
 
   const loadData = async () => {
     const [storeRes, ordersRes] = await Promise.all([

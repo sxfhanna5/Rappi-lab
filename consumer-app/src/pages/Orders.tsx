@@ -25,8 +25,14 @@ export default function Orders() {
   const navigate = useNavigate()
 
   useEffect(() => {
+  api.get('/api/orders/my').then(res => setOrders(res.data))
+
+  const interval = setInterval(() => {
     api.get('/api/orders/my').then(res => setOrders(res.data))
-  }, [])
+  }, 10000)
+
+  return () => clearInterval(interval)
+}, [])
 
  return (
   <div className="orders-container">
