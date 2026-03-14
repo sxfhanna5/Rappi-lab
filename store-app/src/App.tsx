@@ -3,9 +3,9 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 
-function PrivateRoute({ children }) {
+function PrivateRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem('token')
-  return token ? children : <Navigate to="/login" />
+  return token ? <>{children}</> : <Navigate to="/login" />
 }
 
 export default function App() {
