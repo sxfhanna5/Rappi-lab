@@ -12,6 +12,14 @@ app.use(cors({
 
 app.options('*', cors())
 
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*')
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  if (req.method === 'OPTIONS') return res.sendStatus(200)
+  next()
+})
+
 app.use(express.json())
 
 app.use('/api/auth', require('./routes/auth'))
@@ -23,7 +31,13 @@ app.get('/', (req, res) => {
   res.json({ message: 'API Rappi Lab funcionando ✓' })
 })
 
-const PORT = process.env.PORT || 3000
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en puerto ${PORT}`)
-})
+// Para desarrollo local
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 3000
+  app.listen(PORT, () => {
+    console.log(`Servidor corriendo en puerto ${PORT}`)
+  })
+}
+
+// Para Vercel
+module.exports = app
