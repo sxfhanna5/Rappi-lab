@@ -28,7 +28,7 @@ export default function Register() {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2 className="auth-title">🚗 Crear cuenta de repartidor</h2>
+        <h2 className="auth-title">🚗 Crear cuenta</h2>
         {error && <p className="auth-error">{error}</p>}
         <form onSubmit={handleSubmit}>
           <input className="auth-input" placeholder="Nombre" value={form.name}
@@ -37,7 +37,7 @@ export default function Register() {
             onChange={e => setForm({ ...form, email: e.target.value })} required />
           <input className="auth-input" type="password" placeholder="Contraseña" value={form.password}
             onChange={e => setForm({ ...form, password: e.target.value })} required />
-          <button className="auth-button delivery" type="submit">Registrarse como Repartidor</button>
+          <button className="auth-button delivery" type="submit">Registrarse</button>
         </form>
         <p className="auth-link">¿Ya tienes cuenta? <Link to="/login">Inicia sesión</Link></p>
       </div>

@@ -28,7 +28,7 @@ export default function Register() {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2 className="auth-title">🏪 Crear cuenta de tienda</h2>
+        <h2 className="auth-title">🏪 Crear cuenta</h2>
         {error && <p className="auth-error">{error}</p>}
         <form onSubmit={handleSubmit}>
           <input className="auth-input" placeholder="Tu nombre" value={form.name}

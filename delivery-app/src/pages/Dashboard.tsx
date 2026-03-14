@@ -21,11 +21,11 @@ interface OrderDetail extends Order {
 
 const statusLabel: Record<string, string> = {
   pending: '⏳ Pendiente',
-  accepted: '🚗 Aceptada',
-  preparing: '👨‍🍳 Preparando',
-  ready: '✅ Lista para recoger',
-  delivered: '📦 Entregada',
-  declined: '❌ Rechazada'
+  accepted: 'En camino',
+  preparing: 'Preparando',
+  ready: 'Lista para recoger',
+  delivered: '✅ Entregada',
+  declined: 'Rechazada'
 }
 
 export default function Dashboard() {
@@ -73,88 +73,106 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-container">
+
+      {/* Header igual que Consumer y Store */}
       <div className="dashboard-header">
-        <h2 className="dashboard-title">🚗 Delivery App</h2>
-        <div className="header-right">
-          <span className="username">Hola, {user.name}</span>
-          <button className="logout-btn" onClick={logout}>Salir</button>
+        <div className="dashboard-header-left">
+          <h2 className="dashboard-title">Mis entregas</h2>
+          <p className="dashboard-greeting">
+            Hola, <span className="dashboard-greeting-name">{user.name}</span>
+          </p>
+        </div>
+        <div className="dashboard-header-right">
+          <button className="btn-secondary" onClick={logout}>Salir</button>
         </div>
       </div>
 
+      {/* Modal detalle */}
       {selectedOrder && orderDetail && (
         <div className="modal-overlay">
           <div className="modal-card">
             <h3 className="modal-title">Detalle de orden</h3>
-            <p className="modal-info"><strong>Estado:</strong> {statusLabel[orderDetail.status]}</p>
-            <p className="modal-info"><strong>Fecha:</strong> {new Date(orderDetail.created_at).toLocaleString()}</p>
-            <h4 className="items-title">Productos:</h4>
+            <p className="modal-info">
+              <strong>Estado:</strong> {statusLabel[orderDetail.status]}
+            </p>
+            <p className="modal-info">
+              <strong>Fecha:</strong> {new Date(orderDetail.created_at).toLocaleString()}
+            </p>
+            <h4 className="modal-items-title">Productos</h4>
             {orderDetail.items?.map(item => (
               <div key={item.id} className="modal-item">
                 <span>{item.product_name} x{item.quantity}</span>
-                <span>${(item.price * item.quantity).toLocaleString()}</span>
+                <span>${(item.price * item.quantity).toLocaleString('es-CO')}</span>
               </div>
             ))}
             <div className="modal-actions">
               {orderDetail.status === 'pending' && (
                 <>
-                  <button className="accept-btn" onClick={() => updateStatus(selectedOrder, 'accepted')}>
-                    ✅ Aceptar
+                  <button className="btn-green" onClick={() => updateStatus(selectedOrder, 'accepted')}>
+                    Aceptar
                   </button>
-                  <button className="decline-btn" onClick={() => updateStatus(selectedOrder, 'declined')}>
-                    ❌ Rechazar
+                  <button className="btn-red" onClick={() => updateStatus(selectedOrder, 'declined')}>
+                    Rechazar
                   </button>
                 </>
               )}
               {orderDetail.status === 'ready' && (
-                <button className="accept-btn" onClick={() => updateStatus(selectedOrder, 'delivered')}>
-                  📦 Marcar como entregada
+                <button className="btn-green" onClick={() => updateStatus(selectedOrder, 'delivered')}>
+                  Marcar como entregada
                 </button>
               )}
-              <button className="close-btn" onClick={closeModal}>Cerrar</button>
+              <button className="btn-secondary" onClick={closeModal}>Cerrar</button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Tabs */}
       <div className="tabs">
-        <button className={`tab ${tab === 'available' ? 'active' : ''}`}
-          onClick={() => setTab('available')}>
+        <button
+          className={`tab ${tab === 'available' ? 'active' : ''}`}
+          onClick={() => setTab('available')}
+        >
           Disponibles ({available.length})
         </button>
-        <button className={`tab ${tab === 'accepted' ? 'active' : ''}`}
-          onClick={() => setTab('accepted')}>
+        <button
+          className={`tab ${tab === 'accepted' ? 'active' : ''}`}
+          onClick={() => setTab('accepted')}
+        >
           Mis órdenes ({accepted.length})
         </button>
       </div>
 
+      {/* Lista */}
       <div className="orders-list">
         {tab === 'available' && (
           available.length === 0
             ? <p className="empty-msg">No hay órdenes disponibles</p>
             : available.map(order => (
-              <div key={order.id} className="order-card">
-                <div className="order-header">
-                  <span className="order-store">🏪 {order.store_name}</span>
-                  <span className="order-status">{statusLabel[order.status]}</span>
+              <div key={order.id} className="item-card">
+                <div className="item-info">
+                  <p className="item-name">{order.store_name}</p>
+                  <p className="item-status">{statusLabel[order.status]}</p>
+                  <p className="item-date">{new Date(order.created_at).toLocaleString()}</p>
                 </div>
-                <p className="order-date">{new Date(order.created_at).toLocaleString()}</p>
-                <button className="detail-btn" onClick={() => viewDetail(order.id)}>
-                  Ver detalle y aceptar
+                <button className="btn-black" onClick={() => viewDetail(order.id)}>
+                  Ver detalle
                 </button>
               </div>
             ))
         )}
+
         {tab === 'accepted' && (
           accepted.length === 0
             ? <p className="empty-msg">No tienes órdenes aceptadas</p>
             : accepted.map(order => (
-              <div key={order.id} className="order-card">
-                <div className="order-header">
-                  <span className="order-store">Orden #{order.id.slice(0, 8)}</span>
-                  <span className="order-status">{statusLabel[order.status]}</span>
+              <div key={order.id} className="item-card">
+                <div className="item-info">
+                  <p className="item-name">Orden #{order.id.slice(0, 8)}</p>
+                  <p className="item-status">{statusLabel[order.status]}</p>
+                  <p className="item-date">{new Date(order.created_at).toLocaleString()}</p>
                 </div>
-                <p className="order-date">{new Date(order.created_at).toLocaleString()}</p>
-                <button className="detail-btn" onClick={() => viewDetail(order.id)}>
+                <button className="btn-black" onClick={() => viewDetail(order.id)}>
                   Ver detalle
                 </button>
               </div>
