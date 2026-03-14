@@ -21,8 +21,8 @@ interface OrderDetail extends Order {
 
 const statusLabel: Record<string, string> = {
   pending: '⏳ Pendiente',
-  accepted: 'En camino',
-  preparing: 'Preparando',
+  accepted: 'Aceptada',
+  preparing: 'En camino',
   ready: 'Lista para recoger',
   delivered: '✅ Entregada',
   declined: 'Rechazada'
@@ -74,7 +74,7 @@ export default function Dashboard() {
   return (
     <div className="dashboard-container">
 
-      {/* Header igual que Consumer y Store */}
+      {/* Header */}
       <div className="dashboard-header">
         <div className="dashboard-header-left">
           <h2 className="dashboard-title">Mis entregas</h2>
@@ -115,6 +115,16 @@ export default function Dashboard() {
                     Rechazar
                   </button>
                 </>
+              )}
+              {orderDetail.status === 'accepted' && (
+                <button className="btn-green" onClick={() => updateStatus(selectedOrder, 'preparing')}>
+                  Marcar como en camino
+                </button>
+              )}
+              {orderDetail.status === 'preparing' && (
+                <button className="btn-green" onClick={() => updateStatus(selectedOrder, 'ready')}>
+                  Marcar como lista para recoger
+                </button>
               )}
               {orderDetail.status === 'ready' && (
                 <button className="btn-green" onClick={() => updateStatus(selectedOrder, 'delivered')}>

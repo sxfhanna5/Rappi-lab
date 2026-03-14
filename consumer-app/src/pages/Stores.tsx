@@ -41,8 +41,11 @@ export default function Stores() {
 </div>
       <div className="stores-grid">
         {stores.map(store => (
-          <div key={store.id} className="store-card"
-            onClick={() => navigate(`/stores/${store.id}/products`)}>
+  <div
+    key={store.id}
+    className={`store-card ${!store.is_open ? 'store-card-disabled' : ''}`}
+    onClick={() => store.is_open && navigate(`/stores/${store.id}/products`)}
+  >
             <h3 className="store-name">{store.name}</h3>
             <span className={`store-badge ${store.is_open ? 'open' : 'closed'}`}>
               {store.is_open ? '🟢 Abierta' : '🔴 Cerrada'}

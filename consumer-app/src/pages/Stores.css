@@ -3,6 +3,15 @@
   margin: 0 auto;
   padding: 4rem 2rem 2rem;
 }
+.store-card-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.store-card-disabled:hover {
+  transform: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
+}
 
 .stores-header {
   display: flex;
