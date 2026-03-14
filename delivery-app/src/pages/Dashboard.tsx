@@ -21,11 +21,11 @@ interface OrderDetail extends Order {
 
 const statusLabel: Record<string, string> = {
   pending: '⏳ Pendiente',
-  accepted: 'Aceptada',
-  preparing: 'En camino',
-  ready: 'Lista para recoger',
-  delivered: '✅ Entregada',
-  declined: 'Rechazada'
+  accepted: '✅ Aceptada',
+  preparing: '🛵 En camino',
+  ready: '📦 Recogido',
+  delivered: '🎉 Entregada',
+  declined: '❌ Rechazada'
 }
 
 export default function Dashboard() {
