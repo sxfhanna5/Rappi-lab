@@ -37,7 +37,7 @@ export default function Register() {
             onChange={e => setForm({ ...form, email: e.target.value })} required />
           <input className="auth-input" type="password" placeholder="Contraseña" value={form.password}
             onChange={e => setForm({ ...form, password: e.target.value })} required />
-          <button className="auth-button" type="submit">Registrarse como Consumidor</button>
+          <button className="auth-button" type="submit">Registrarse</button>
         </form>
         <p className="auth-link">¿Ya tienes cuenta? <Link to="/login">Inicia sesión</Link></p>
       </div>
