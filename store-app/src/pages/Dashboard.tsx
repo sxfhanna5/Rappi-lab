@@ -30,11 +30,11 @@ interface NewProduct {
 
 const statusLabel: Record<string, string> = {
   pending: '⏳ Pendiente',
-  accepted: '🚗 Aceptada',
-  preparing: '👨‍🍳 Preparando',
-  ready: '✅ Lista',
-  delivered: '📦 Entregada',
-  declined: '❌ Rechazada'
+  accepted: 'En camino',
+  preparing: 'Preparando',
+  ready: 'Lista',
+  delivered: '✅ Entregada',
+  declined: 'Rechazada'
 }
 
 export default function Dashboard() {
@@ -45,6 +45,7 @@ export default function Dashboard() {
   const [msg, setMsg] = useState('')
   const [tab, setTab] = useState<'products' | 'orders'>('products')
   const navigate = useNavigate()
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
 
   useEffect(() => { loadData() }, [])
 
@@ -71,13 +72,13 @@ export default function Dashboard() {
     setMsg('')
     try {
       await api.post('/api/products', { ...newProduct, price: parseInt(newProduct.price) })
-      setMsg('✅ Producto creado')
+      setMsg('Producto creado exitosamente')
       setNewProduct({ name: '', price: '', description: '' })
       loadData()
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'response' in err) {
         const axiosErr = err as { response?: { data?: { error?: string } } }
-        setMsg('❌ ' + (axiosErr.response?.data?.error || 'Error al crear producto'))
+        setMsg(axiosErr.response?.data?.error || 'Error al crear producto')
       }
     }
   }
@@ -94,80 +95,112 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-container">
+
+      {/* Header igual que Consumer */}
       <div className="dashboard-header">
-        <div>
-          <h2 className="dashboard-title">🏪 {store?.name || 'Mi Tienda'}</h2>
-          {store && (
-            <button
-              className={`toggle-btn ${store.is_open ? 'close' : 'open'}`}
-              onClick={toggleStore}
-            >
-              {store.is_open ? '🔴 Cerrar tienda' : '🟢 Abrir tienda'}
-            </button>
-          )}
+        <div className="dashboard-header-left">
+          <h2 className="dashboard-title">{store?.name || 'Mi Tienda'}</h2>
+          <p className="dashboard-greeting">Hola, <span className="dashboard-greeting-name">{user.name}</span></p>
         </div>
-        <button className="logout-btn" onClick={logout}>Salir</button>
+        <div className="dashboard-header-right">
+          <button
+            className={`toggle-btn ${store?.is_open ? 'close' : 'open'}`}
+            onClick={toggleStore}
+          >
+            {store?.is_open ? 'Cerrar tienda' : 'Abrir tienda'}
+          </button>
+          <button className="btn-secondary" onClick={logout}>Salir</button>
+        </div>
       </div>
 
+      {/* Tabs */}
       <div className="tabs">
-        <button className={`tab ${tab === 'products' ? 'active' : ''}`}
-          onClick={() => setTab('products')}>Productos ({products.length})</button>
-        <button className={`tab ${tab === 'orders' ? 'active' : ''}`}
-          onClick={() => setTab('orders')}>Órdenes ({orders.length})</button>
+        <button
+          className={`tab ${tab === 'products' ? 'active' : ''}`}
+          onClick={() => setTab('products')}
+        >
+          Productos ({products.length})
+        </button>
+        <button
+          className={`tab ${tab === 'orders' ? 'active' : ''}`}
+          onClick={() => setTab('orders')}
+        >
+          Órdenes ({orders.length})
+        </button>
       </div>
 
+      {/* Tab Productos */}
       {tab === 'products' && (
         <div>
-          <div className="form-card">
-            <h3 className="section-title">Agregar producto</h3>
-            {msg && <p className="msg">{msg}</p>}
+          {/* Card agregar producto */}
+          <div className="product-form-card">
+            <h3 className="form-title">Agregar producto</h3>
+            {msg && <p className="form-msg">{msg}</p>}
             <form onSubmit={createProduct}>
-              <input className="form-input" placeholder="Nombre del producto"
-                value={newProduct.name} onChange={e => setNewProduct({ ...newProduct, name: e.target.value })} required />
-              <input className="form-input" type="number" placeholder="Precio"
-                value={newProduct.price} onChange={e => setNewProduct({ ...newProduct, price: e.target.value })} required />
-              <input className="form-input" placeholder="Descripción (opcional)"
-                value={newProduct.description} onChange={e => setNewProduct({ ...newProduct, description: e.target.value })} />
-              <button className="green-btn" type="submit">+ Agregar producto</button>
+              <input
+                className="form-input"
+                placeholder="Nombre del producto"
+                value={newProduct.name}
+                onChange={e => setNewProduct({ ...newProduct, name: e.target.value })}
+                required
+              />
+              <input
+                className="form-input"
+                type="number"
+                placeholder="Precio"
+                value={newProduct.price}
+                onChange={e => setNewProduct({ ...newProduct, price: e.target.value })}
+                required
+              />
+              <input
+                className="form-input"
+                placeholder="Descripción (opcional)"
+                value={newProduct.description}
+                onChange={e => setNewProduct({ ...newProduct, description: e.target.value })}
+              />
+              <button className="btn-green" type="submit">Agregar producto</button>
             </form>
           </div>
+
+          {/* Lista de productos */}
           <div className="items-list">
             {products.length === 0 && <p className="empty-msg">No hay productos aún</p>}
             {products.map(p => (
               <div key={p.id} className="item-card">
-                <div>
-                  <strong>{p.name}</strong>
+                <div className="item-info">
+                  <p className="item-name">{p.name}</p>
                   {p.description && <p className="item-desc">{p.description}</p>}
+                  <p className="item-price">${p.price.toLocaleString('es-CO')}</p>
                 </div>
-                <span className="item-price">${p.price.toLocaleString()}</span>
               </div>
             ))}
           </div>
         </div>
       )}
 
+      {/* Tab Órdenes */}
       {tab === 'orders' && (
         <div className="items-list">
-          {orders.length === 0 && <p className="empty-msg">No hay órdenes aún</p>}
+          {orders.length === 0 && <p className="empty-msg-centered">No hay órdenes aún</p>}
           {orders.map(order => (
-            <div key={order.id} className="order-card">
-              <div className="order-header">
-                <span className="order-id">Orden #{order.id.slice(0, 8)}</span>
-                <span className="order-status">{statusLabel[order.status]}</span>
+            <div key={order.id} className="item-card">
+              <div className="item-info">
+                <p className="item-name">Orden #{order.id.slice(0, 8)}</p>
+                <p className="item-desc">{statusLabel[order.status]}</p>
+                <p className="item-price-small">{new Date(order.created_at).toLocaleString()}</p>
               </div>
-              <p className="order-date">{new Date(order.created_at).toLocaleString()}</p>
-              {order.status === 'pending' && (
-                <button className="green-btn"
-                  onClick={() => updateOrderStatus(order.id, 'preparing')}>
-                  Comenzar a preparar
-                </button>
-              )}
-              {order.status === 'preparing' && (
-                <button className="green-btn"
-                  onClick={() => updateOrderStatus(order.id, 'ready')}>
-                  Marcar como lista
-                </button>
-              )}
+              <div className="order-actions">
+                {order.status === 'pending' && (
+                  <button className="btn-black" onClick={() => updateOrderStatus(order.id, 'preparing')}>
+                    Comenzar a preparar
+                  </button>
+                )}
+                {order.status === 'preparing' && (
+                  <button className="btn-black" onClick={() => updateOrderStatus(order.id, 'ready')}>
+                    Marcar como lista
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
