@@ -1,21 +1,32 @@
 import { Router, Request, Response } from 'express'
 import pool from '../config/db'
 import { authenticateToken, requireRole, AuthRequest } from '../middleware/auth'
+import { OrderStatus } from '../types/enums'
 
 const router = Router()
 
 router.post('/', authenticateToken, requireRole('consumer'), async (req: AuthRequest, res: Response): Promise<void> => {
-  const { storeId, items } = req.body
+  const { storeId, items, destination } = req.body
+
   if (!storeId || !items?.length) {
     res.status(400).json({ error: 'storeId e items requeridos' })
     return
   }
+
+  if (!destination?.lat || !destination?.lng) {
+    res.status(400).json({ error: 'Destino de entrega requerido' })
+    return
+  }
+
   try {
     const orderResult = await pool.query(
-      'INSERT INTO orders (consumer_id, store_id) VALUES ($1, $2) RETURNING *',
-      [req.user!.id, storeId]
+      `INSERT INTO orders (consumer_id, store_id, status, destination)
+       VALUES ($1, $2, $3, ST_SetSRID(ST_MakePoint($4, $5), 4326))
+       RETURNING *`,
+      [req.user!.id, storeId, OrderStatus.CREATED, destination.lng, destination.lat]
     )
     const order = orderResult.rows[0]
+
     for (const item of items) {
       await pool.query(
         'INSERT INTO order_items (order_id, product_id, quantity) VALUES ($1, $2, $3)',
@@ -24,6 +35,7 @@ router.post('/', authenticateToken, requireRole('consumer'), async (req: AuthReq
     }
     res.status(201).json(order)
   } catch (err) {
+    console.error(err)
     res.status(500).json({ error: 'Error al crear orden' })
   }
 })
@@ -83,7 +95,16 @@ router.get('/accepted', authenticateToken, requireRole('delivery'), async (req: 
 
 router.get('/:id', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
-    const orderResult = await pool.query('SELECT * FROM orders WHERE id = $1', [req.params.id])
+ 
+    const orderResult = await pool.query(
+      `SELECT *,
+        ST_Y(destination::geometry) as destination_lat,
+        ST_X(destination::geometry) as destination_lng,
+        ST_Y(delivery_position::geometry) as delivery_lat,
+        ST_X(delivery_position::geometry) as delivery_lng
+       FROM orders WHERE id = $1`,
+      [req.params.id]
+    )
     const order = orderResult.rows[0]
     if (!order) {
       res.status(404).json({ error: 'Orden no encontrada' })
@@ -105,10 +126,12 @@ router.patch('/:id/status', authenticateToken, async (req: AuthRequest, res: Res
   const { status } = req.body
   try {
     let result
-    if (status === 'accepted' && req.user!.role === 'delivery') {
+
+  
+    if (status === OrderStatus.IN_DELIVERY && req.user!.role === 'delivery') {
       result = await pool.query(
         'UPDATE orders SET status = $1, delivery_id = $2 WHERE id = $3 RETURNING *',
-        [status, req.user!.id, req.params.id]
+        [OrderStatus.IN_DELIVERY, req.user!.id, req.params.id]
       )
     } else {
       result = await pool.query(
@@ -119,6 +142,52 @@ router.patch('/:id/status', authenticateToken, async (req: AuthRequest, res: Res
     res.json(result.rows[0])
   } catch (err) {
     res.status(500).json({ error: 'Error al actualizar estado' })
+  }
+})
+
+
+
+router.patch('/:id/position', authenticateToken, requireRole('delivery'), async (req: AuthRequest, res: Response): Promise<void> => {
+  const { lat, lng } = req.body
+
+  if (!lat || !lng) {
+    res.status(400).json({ error: 'lat y lng requeridos' })
+    return
+  }
+
+  try {
+  
+    await pool.query(
+      `UPDATE orders 
+       SET delivery_position = ST_SetSRID(ST_MakePoint($1, $2), 4326)
+       WHERE id = $3`,
+      [lng, lat, req.params.id]
+    )
+
+  
+    const arrivalCheck = await pool.query(
+      `SELECT id FROM orders
+       WHERE id = $1
+       AND delivery_position IS NOT NULL
+       AND destination IS NOT NULL
+       AND ST_DWithin(delivery_position, destination, 5)`,
+      [req.params.id]
+    )
+
+ 
+    if (arrivalCheck.rows.length > 0) {
+      await pool.query(
+        `UPDATE orders SET status = $1 WHERE id = $2`,
+        [OrderStatus.DELIVERED, req.params.id]
+      )
+      res.json({ arrived: true, status: OrderStatus.DELIVERED })
+      return
+    }
+
+    res.json({ arrived: false })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al actualizar posición' })
   }
 })
 
