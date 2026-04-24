@@ -163,7 +163,7 @@ export default function DeliveryMap({ orderId, status, destination, initialPosit
           <p>Usa las teclas <strong>↑ ↓ ← →</strong> para moverte en el mapa</p>
         )}
       </div>
-      <div style={{ height: '400px', borderRadius: '8px', overflow: 'hidden', marginTop: '0.75rem' }}>
+      <div style={{ height: '300px', borderRadius: '12px', overflow: 'hidden', marginTop: '0.75rem', border: '1px solid #ddd' }}>
         <MapContainer
           center={[position.lat, position.lng]}
           zoom={17}

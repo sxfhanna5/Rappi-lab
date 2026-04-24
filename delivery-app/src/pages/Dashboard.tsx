@@ -244,20 +244,35 @@ export default function Dashboard() {
           <>
             {/* Mapa de entrega activa al inicio de "Mis órdenes" */}
             {activeDelivery && (
-              <div className={`active-delivery-card ${isMinimized ? 'minimized' : ''}`} style={{ marginBottom: '2rem' }}>
+              <div className={`active-delivery-card ${isMinimized ? 'item-card active-minimized' : ''}`} style={{ marginBottom: '2rem' }}>
                 <div className="active-delivery-header">
-                  <h3 className="active-delivery-title">
-                    {isMinimized 
-                      ? `📦 Entrega en curso: #${activeDelivery.id.slice(0, 8)}`
-                      : `Entregando orden #${activeDelivery.id.slice(0, 8)}`}
-                  </h3>
-                  {!delivered && (
-                    <button
-                      className="btn-secondary"
-                      onClick={() => setIsMinimized(!isMinimized)}
-                    >
-                      {isMinimized ? 'Ver mapa' : 'Minimizar'}
-                    </button>
+                  {isMinimized ? (
+                    <>
+                      <div className="item-info">
+                        <p className="item-name">{activeDelivery.store_name || `Orden #${activeDelivery.id.slice(0, 8)}`}</p>
+                        <p className="item-status">� Entrega en curso • {statusLabel[activeDelivery.status]}</p>
+                      </div>
+                      <button
+                        className="btn-black"
+                        onClick={() => setIsMinimized(false)}
+                      >
+                        Ver mapa
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="active-delivery-title">
+                        Entregando orden #{activeDelivery.id.slice(0, 8)}
+                      </h3>
+                      {!delivered && (
+                        <button
+                          className="btn-secondary"
+                          onClick={() => setIsMinimized(true)}
+                        >
+                          Minimizar
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
 
