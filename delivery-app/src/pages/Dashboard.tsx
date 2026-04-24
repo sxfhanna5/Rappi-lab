@@ -62,17 +62,26 @@ export default function Dashboard() {
   useEffect(() => {
     if (!activeDelivery) return
 
+    console.log('Suscribiéndose a actualizaciones de la orden activa:', activeDelivery.id)
     const channel = supabase.channel(`order:${activeDelivery.id}`)
     
     channel.on('broadcast', { event: 'order-status-update' }, (payload) => {
+      console.log('Notificación de estado recibida en Dashboard Delivery:', payload)
       const { status } = payload.payload
-      setActiveDelivery(prev => prev ? { ...prev, status } : null)
+      setActiveDelivery(prev => {
+        if (!prev) return null
+        console.log('Actualizando estado de activeDelivery de', prev.status, 'a', status)
+        return { ...prev, status }
+      })
       loadData()
     })
 
-    channel.subscribe()
+    channel.subscribe((status) => {
+      console.log('Estado de suscripción Realtime en Dashboard:', status)
+    })
 
     return () => {
+      console.log('Desuscribiéndose de la orden activa:', activeDelivery.id)
       supabase.removeChannel(channel)
     }
   }, [activeDelivery?.id])
