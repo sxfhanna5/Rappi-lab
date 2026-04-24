@@ -28,6 +28,7 @@ const statusLabel: Record<string, string> = {
   'En entrega': '🚗 En entrega',
   'Listo para recoger': '📦 Listo para recoger',
   preparing: '🧑‍🍳 Preparando',
+  Preparando: '🧑‍🍳 Preparando',
   ready: '📦 Lista para recoger',
   Entregado: '🎉 Entregado',
   delivered: '🎉 Entregada',

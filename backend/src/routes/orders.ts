@@ -162,14 +162,25 @@ router.patch('/:id/status', authenticateToken, async (req: AuthRequest, res: Res
 
 router.patch('/:id/accept', authenticateToken, requireRole('delivery'), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    // Permitir aceptar si la orden está 'Aceptada', 'Preparando' o ya 'Lista para recoger'
     const result = await pool.query(
-      'UPDATE orders SET status = $1, delivery_id = $2 WHERE id = $3 AND status = $4 RETURNING *',
-      [OrderStatus.IN_DELIVERY, req.user!.id, req.params.id, OrderStatus.ACCEPTED]
+      'UPDATE orders SET delivery_id = $1 WHERE id = $2 AND (status = $3 OR status = $4 OR status = $5) RETURNING *',
+      [req.user!.id, req.params.id, OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY]
     )
     
     if (result.rows.length === 0) {
       res.status(404).json({ error: 'Orden no encontrada o no está disponible para entrega' })
       return
+    }
+
+    // Si el estado era 'Aceptada', cambiarlo a 'En entrega'
+    // Si ya era 'Preparando' o 'Listo para recoger', mantener el estado actual para no interrumpir el flujo de la tienda
+    if (result.rows[0].status === OrderStatus.ACCEPTED) {
+      await pool.query(
+        'UPDATE orders SET status = $1 WHERE id = $2',
+        [OrderStatus.IN_DELIVERY, req.params.id]
+      )
+      result.rows[0].status = OrderStatus.IN_DELIVERY
     }
 
     res.json(result.rows[0])

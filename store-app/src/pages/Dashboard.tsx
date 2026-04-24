@@ -39,6 +39,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   pending: { label: '⏳ Pendiente', className: 'badge-created' },
   accepted: { label: '✅ Aceptada', className: 'badge-delivery' },
   preparing: { label: '🧑‍🍳 Preparando', className: 'badge-delivery' },
+  Preparando: { label: '🧑‍🍳 Preparando', className: 'badge-delivery' },
   ready: { label: '🛵 Lista', className: 'badge-delivery' },
   delivered: { label: '🎉 Entregada', className: 'badge-done' },
   declined: { label: '❌ Rechazada', className: 'badge-declined' }
@@ -254,8 +255,11 @@ export default function Dashboard() {
                   </p>
                 </div>
                 <div className="order-right">
-                  {/* Mostrar badge solo para estados después de la aceptación inicial */}
-                  {order.status !== 'Creado' && order.status !== 'Aceptada' && (
+                  {/* Mostrar badge solo para estados finales o intermedios sin botones */}
+                  {order.status !== 'Creado' && 
+                   order.status !== 'Aceptada' && 
+                   order.status !== 'En entrega' && 
+                   order.status !== 'Preparando' && (
                     <span className={`status-badge ${config.className}`}>
                       {config.label}
                     </span>
@@ -269,15 +273,15 @@ export default function Dashboard() {
                       ✅ Aceptar pedido
                     </button>
                   )}
-                  {order.status === 'Aceptada' && (
+                  {(order.status === 'Aceptada' || order.status === 'En entrega') && (
                     <button
                       className="btn-black action-btn"
-                      onClick={() => updateOrderStatus(order.id, 'preparing')}
+                      onClick={() => updateOrderStatus(order.id, 'Preparando')}
                     >
                       Comenzar a preparar
                     </button>
                   )}
-                  {order.status === 'preparing' && (
+                  {order.status === 'Preparando' && (
                     <button
                       className="btn-black action-btn"
                       onClick={() => updateOrderStatus(order.id, 'Listo para recoger')}
