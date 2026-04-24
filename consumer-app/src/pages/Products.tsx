@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api'
+import MapPicker from '../components/MapPicker'
 import './Products.css'
 
 interface Product {
@@ -17,6 +18,11 @@ interface CartItem {
   quantity: number
 }
 
+interface Position {
+  lat: number
+  lng: number
+}
+
 export default function Products() {
   const { storeId } = useParams<{ storeId: string }>()
   const navigate = useNavigate()
@@ -24,6 +30,8 @@ export default function Products() {
   const [cart, setCart] = useState<CartItem[]>([])
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState('')
+  const [destination, setDestination] = useState<Position | null>(null)
+  const [showMap, setShowMap] = useState(false)
 
   useEffect(() => {
     api.get(`/api/products?storeId=${storeId}`).then(res => setProducts(res.data))
@@ -35,7 +43,12 @@ export default function Products() {
       setCart(cart.map(i => i.productId === product.id
         ? { ...i, quantity: i.quantity + 1 } : i))
     } else {
-      setCart([...cart, { productId: product.id, name: product.name, price: product.price, quantity: 1 }])
+      setCart([...cart, {
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        quantity: 1
+      }])
     }
   }
 
@@ -45,14 +58,24 @@ export default function Products() {
 
   const createOrder = async () => {
     if (!cart.length) return
+
+    if (!destination) {
+      setMsg('⚠️ Debes seleccionar un punto de entrega en el mapa')
+      setShowMap(true)
+      return
+    }
+
     setLoading(true)
     try {
       await api.post('/api/orders', {
         storeId,
-        items: cart.map(i => ({ productId: i.productId, quantity: i.quantity }))
+        items: cart.map(i => ({ productId: i.productId, quantity: i.quantity })),
+        destination
       })
       setMsg('✅ Orden creada exitosamente')
       setCart([])
+      setDestination(null)
+      setShowMap(false)
     } catch {
       setMsg('❌ Error al crear la orden')
     }
@@ -66,6 +89,7 @@ export default function Products() {
       <button className="back-btn" onClick={() => navigate('/stores')}>← Volver</button>
       <h2 className="products-title">Productos</h2>
       {msg && <p className="products-msg">{msg}</p>}
+
       <div className="products-layout">
         <div className="products-list">
           {products.length === 0 && <p className="empty-msg">No hay productos disponibles</p>}
@@ -74,12 +98,13 @@ export default function Products() {
               <div>
                 <h3 className="product-name">{p.name}</h3>
                 {p.description && <p className="product-desc">{p.description}</p>}
-                <p className="product-price">${p.price.toLocaleString()}</p>
+                <p className="product-price">${p.price.toLocaleString('es-CO')}</p>
               </div>
-              <button className="add-btn" onClick={() => addToCart(p)}>+ Agregar</button>
+              <button className="add-btn" onClick={() => addToCart(p)}>➕ Agregar</button>
             </div>
           ))}
         </div>
+
         <div className="cart">
           <h3 className="cart-title">🛒 Carrito</h3>
           {cart.length === 0 && <p className="empty-msg">Agrega productos</p>}
@@ -87,15 +112,45 @@ export default function Products() {
             <div key={i.productId} className="cart-item">
               <span>{i.name} x{i.quantity}</span>
               <div className="cart-item-right">
-                <span className="product-price">${(i.price * i.quantity).toLocaleString()}</span>
+                <span className="product-price">${(i.price * i.quantity).toLocaleString('es-CO')}</span>
                 <button className="remove-btn" onClick={() => removeFromCart(i.productId)}>✕</button>
               </div>
             </div>
           ))}
+
           {cart.length > 0 && (
             <>
-              <div className="cart-total">Total: ${total.toLocaleString()}</div>
-              <button className="order-btn" onClick={createOrder} disabled={loading}>
+              <div className="cart-total">Total: ${total.toLocaleString('es-CO')}</div>
+
+              {/* Botón para mostrar/ocultar el mapa */}
+              <button
+                className="map-toggle-btn"
+                onClick={() => setShowMap(!showMap)}
+              >
+                {showMap ? 'Ocultar mapa' : '📍 Seleccionar punto de entrega'}
+              </button>
+
+              {/* Mapa para seleccionar destino */}
+              {showMap && (
+                <div className="map-section">
+                  <p className="map-hint">Haz clic en el mapa para seleccionar tu punto de entrega</p>
+                  <MapPicker
+                    position={destination}
+                    onSelect={setDestination}
+                  />
+                  {destination && (
+                    <p className="destination-selected">
+                      ✅ Punto seleccionado: {destination.lat.toFixed(4)}, {destination.lng.toFixed(4)}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <button
+                className="order-btn"
+                onClick={createOrder}
+                disabled={loading}
+              >
                 {loading ? 'Creando...' : 'Hacer pedido'}
               </button>
             </>
