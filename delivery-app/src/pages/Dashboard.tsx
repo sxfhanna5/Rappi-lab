@@ -49,6 +49,7 @@ export default function Dashboard() {
   const [activeDelivery, setActiveDelivery] = useState<OrderDetail | null>(null)
   const [delivered, setDelivered] = useState(false)
   const [isNearDestination, setIsNearDestination] = useState(false)
+  const [isMinimized, setIsMinimized] = useState(false)
   const navigate = useNavigate()
   const user = JSON.parse(localStorage.getItem('user') || '{}')
 
@@ -97,6 +98,7 @@ export default function Dashboard() {
       const res = await api.get(`/api/orders/${orderId}`)
       const orderData = res.data
       setActiveDelivery(orderData)
+      setIsMinimized(false)
       setSelectedOrder(null)
       setOrderDetail(null)
       setDelivered(false)
@@ -169,6 +171,13 @@ export default function Dashboard() {
     }
   }
 
+  const resumeDelivery = (order: OrderDetail) => {
+    setActiveDelivery(order)
+    setIsMinimized(false)
+    setSelectedOrder(null)
+    setOrderDetail(null)
+  }
+
   const logout = () => {
     localStorage.clear()
     navigate('/login')
@@ -192,55 +201,59 @@ export default function Dashboard() {
 
    
       {activeDelivery && (
-        <div className="active-delivery-card">
+        <div className={`active-delivery-card ${isMinimized ? 'minimized' : ''}`}>
           <div className="active-delivery-header">
             <h3 className="active-delivery-title">
-              Entregando orden #{activeDelivery.id.slice(0, 8)}
+              {isMinimized 
+                ? `📦 Entrega en curso: #${activeDelivery.id.slice(0, 8)}`
+                : `Entregando orden #${activeDelivery.id.slice(0, 8)}`}
             </h3>
             {!delivered && (
               <button
                 className="btn-secondary"
-                onClick={() => setActiveDelivery(null)}
+                onClick={() => setIsMinimized(!isMinimized)}
               >
-                Minimizar
+                {isMinimized ? 'Ver mapa' : 'Minimizar'}
               </button>
             )}
           </div>
 
-          {delivered ? (
-            <div className="delivered-banner">
-              🎉 ¡Entrega completada exitosamente!
-            </div>
-          ) : (
-            <>
-              {activeDelivery.destination_lat && activeDelivery.destination_lng ? (
-                <>
-                  <DeliveryMap
-                    orderId={activeDelivery.id}
-                    status={activeDelivery.status}
-                    destination={{
-                      lat: activeDelivery.destination_lat,
-                      lng: activeDelivery.destination_lng
-                    }}
-                    initialPosition={
-                      activeDelivery.delivery_lat && activeDelivery.delivery_lng
-                        ? { lat: activeDelivery.delivery_lat, lng: activeDelivery.delivery_lng }
-                        : null
-                    }
-                    onArrival={handleArrival}
-                  />
-                  {isNearDestination && !delivered && (
-                    <div className="delivery-actions">
-                      <button className="btn-green full-width" onClick={markAsDelivered}>
-                        🏁 Marcar como entregada
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <p className="empty-msg">Esta orden no tiene destino registrado</p>
-              )}
-            </>
+          {!isMinimized && (
+            delivered ? (
+              <div className="delivered-banner">
+                🎉 ¡Entrega completada exitosamente!
+              </div>
+            ) : (
+              <>
+                {activeDelivery.destination_lat && activeDelivery.destination_lng ? (
+                  <>
+                    <DeliveryMap
+                      orderId={activeDelivery.id}
+                      status={activeDelivery.status}
+                      destination={{
+                        lat: activeDelivery.destination_lat,
+                        lng: activeDelivery.destination_lng
+                      }}
+                      initialPosition={
+                        activeDelivery.delivery_lat && activeDelivery.delivery_lng
+                          ? { lat: activeDelivery.delivery_lat, lng: activeDelivery.delivery_lng }
+                          : null
+                      }
+                      onArrival={handleArrival}
+                    />
+                    {isNearDestination && !delivered && (
+                      <div className="delivery-actions">
+                        <button className="btn-green full-width" onClick={markAsDelivered}>
+                          🏁 Marcar como entregada
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <p className="empty-msg">Esta orden no tiene destino registrado</p>
+                )}
+              </>
+            )
           )}
         </div>
       )}
@@ -269,12 +282,20 @@ export default function Dashboard() {
             ))}
 
             <div className="modal-actions">
-              {(orderDetail.status === 'Aceptada') && (
+              {orderDetail.status === 'Aceptada' && (
                 <button
                   className="btn-green"
                   onClick={() => acceptOrder(orderDetail.id)}
                 >
                   ✅ Aceptar y comenzar entrega
+                </button>
+              )}
+              {(orderDetail.status === 'En entrega' || orderDetail.status === 'Listo para recoger') && (
+                <button
+                  className="btn-green"
+                  onClick={() => resumeDelivery(orderDetail)}
+                >
+                  🚗 Reanudar entrega
                 </button>
               )}
               <button className="btn-secondary" onClick={closeModal}>Cerrar</button>
