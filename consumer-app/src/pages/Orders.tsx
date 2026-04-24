@@ -80,20 +80,23 @@ export default function Orders() {
       setDeliveryPosition({ lat, lng })
     })
 
-    channel.on('broadcast', { event: 'order-accepted' }, (payload) => {
-      console.log('Orden aceptada por repartidor:', payload)
-      loadOrders()
-      if (selectedOrder) {
-        loadOrderDetail(selectedOrder.id)
-      }
-    })
-
     channel.on('broadcast', { event: 'order-status-update' }, (payload) => {
       console.log('Estado de orden actualizado:', payload)
-      loadOrders()
+      const newStatus = payload.payload.status
       if (selectedOrder) {
+        setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null)
+      }
+      loadOrders()
+    })
+
+    channel.on('broadcast', { event: 'order-accepted' }, (payload) => {
+      console.log('Orden aceptada por repartidor:', payload)
+      const newStatus = payload.payload.status
+      if (selectedOrder) {
+        setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null)
         loadOrderDetail(selectedOrder.id)
       }
+      loadOrders()
     })
 
     channel.on('broadcast', { event: 'order-delivered' }, (payload) => {
@@ -155,24 +158,13 @@ export default function Orders() {
 
             
             {selectedOrder.destination_lat && selectedOrder.destination_lng ? (
-              <>
-                <p className="map-hint">
-                  {selectedOrder.status === 'Entregado'
-                    ? '🎉 El pedido ha sido entregado'
-                    : deliveryPosition
-                      ? '🚗 El repartidor está en camino'
-                      : (selectedOrder.status === 'En entrega' || selectedOrder.status === 'Listo para recoger')
-                        ? '⏳ El repartidor ya aceptó tu orden y se está preparando'
-                        : '⏳ Esperando que el repartidor acepte la orden'}
-                </p>
-                <TrackingMap
-                  destination={{
-                    lat: selectedOrder.destination_lat,
-                    lng: selectedOrder.destination_lng
-                  }}
-                  deliveryPosition={deliveryPosition}
-                />
-              </>
+              <TrackingMap
+                destination={{
+                  lat: selectedOrder.destination_lat,
+                  lng: selectedOrder.destination_lng
+                }}
+                deliveryPosition={deliveryPosition}
+              />
             ) : (
               <p className="map-hint">Esta orden no tiene punto de entrega registrado</p>
             )}

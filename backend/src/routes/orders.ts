@@ -210,11 +210,7 @@ router.patch('/:id/position', authenticateToken, requireRole('delivery'), async 
 
  
     if (arrivalCheck.rows.length > 0) {
-      await pool.query(
-        `UPDATE orders SET status = $1 WHERE id = $2`,
-        [OrderStatus.DELIVERED, req.params.id]
-      )
-      res.json({ arrived: true, status: OrderStatus.DELIVERED })
+      res.json({ arrived: true })
       return
     }
 
