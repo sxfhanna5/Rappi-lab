@@ -224,9 +224,9 @@ export default function Dashboard() {
       </div>
 
       <div className="orders-list">
-        {tab === 'available' && (
+        {tab === 'available' ? (
           available.length === 0
-            ? <p className="empty-msg">No hay órdenes disponibles</p>
+            ? <p className="empty-msg">No hay órdenes disponibles para entrega</p>
             : available.map(order => (
               <div key={order.id} className="item-card">
                 <div className="item-info">
@@ -239,11 +239,9 @@ export default function Dashboard() {
                 </button>
               </div>
             ))
-        )}
-
-        {tab === 'accepted' && (
+        ) : (
           accepted.length === 0
-            ? <p className="empty-msg">No tienes órdenes aceptadas</p>
+            ? <p className="empty-msg">No tienes órdenes aceptadas aún</p>
             : accepted.map(order => (
               <div key={order.id} className="item-card">
                 <div className="item-info">

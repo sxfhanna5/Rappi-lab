@@ -255,7 +255,10 @@ export default function Dashboard() {
                 </div>
                 <div className="order-right">
                  
-                  {order.status !== 'Creado' && order.status !== 'Aceptada' && (
+                  {order.status !== 'Creado' && 
+                   order.status !== 'Aceptada' && 
+                   order.status !== 'En entrega' && 
+                   order.status !== 'preparing' && (
                     <span className={`status-badge ${config.className}`}>
                       {config.label}
                     </span>
@@ -269,15 +272,7 @@ export default function Dashboard() {
                       ✅ Aceptar pedido
                     </button>
                   )}
-                  {order.status === 'En entrega' && (
-                    <button
-                      className="btn-black action-btn"
-                      onClick={() => updateOrderStatus(order.id, 'Listo para recoger')}
-                    >
-                      📦 Marcar como listo
-                    </button>
-                  )}
-                  {order.status === 'Aceptada' && (
+                  {(order.status === 'Aceptada' || order.status === 'En entrega') && (
                     <button
                       className="btn-black action-btn"
                       onClick={() => updateOrderStatus(order.id, 'preparing')}
@@ -288,7 +283,7 @@ export default function Dashboard() {
                   {order.status === 'preparing' && (
                     <button
                       className="btn-black action-btn"
-                      onClick={() => updateOrderStatus(order.id, 'ready')}
+                      onClick={() => updateOrderStatus(order.id, 'Listo para recoger')}
                     >
                       Marcar como lista
                     </button>
