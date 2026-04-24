@@ -43,9 +43,16 @@ router.post('/', authenticateToken, requireRole('consumer'), async (req: AuthReq
 router.get('/my', authenticateToken, requireRole('consumer'), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const result = await pool.query(
-      `SELECT o.*, s.name as store_name FROM orders o
+      `SELECT o.*,
+        s.name as store_name,
+        ST_Y(o.destination::geometry) as destination_lat,
+        ST_X(o.destination::geometry) as destination_lng,
+        ST_Y(o.delivery_position::geometry) as delivery_lat,
+        ST_X(o.delivery_position::geometry) as delivery_lng
+       FROM orders o
        JOIN stores s ON o.store_id = s.id
-       WHERE o.consumer_id = $1 ORDER BY o.created_at DESC`,
+       WHERE o.consumer_id = $1
+       ORDER BY o.created_at DESC`,
       [req.user!.id]
     )
     res.json(result.rows)
