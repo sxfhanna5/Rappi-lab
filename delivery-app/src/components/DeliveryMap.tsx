@@ -31,9 +31,10 @@ interface Position {
 
 interface DeliveryMapProps {
   orderId: string
+  status: string
   destination: Position
   initialPosition?: Position | null
-  onDelivered: () => void
+  onArrival: (arrived: boolean) => void
 }
 
 const STEP = 0.00005 
@@ -46,7 +47,7 @@ function MapUpdater({ position }: { position: Position }) {
   return null
 }
 
-export default function DeliveryMap({ orderId, destination, initialPosition, onDelivered }: DeliveryMapProps) {
+export default function DeliveryMap({ orderId, status, destination, initialPosition, onArrival }: DeliveryMapProps) {
   // Si no hay posición inicial, empezamos en el centro de Cali (o cerca del destino pero no en él)
   const defaultPos = initialPosition || { lat: 3.4516, lng: -76.5320 }
   
@@ -54,6 +55,9 @@ export default function DeliveryMap({ orderId, destination, initialPosition, onD
   const throttleRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingPosition = useRef<Position>(defaultPos)
   const channelRef = useRef<any>(null)
+
+  // Solo permitir movimiento si el estado es 'Listo para recoger'
+  const canMove = status === 'Listo para recoger'
 
   // Inicializar el canal de Supabase una sola vez
   useEffect(() => {
@@ -84,17 +88,8 @@ export default function DeliveryMap({ orderId, destination, initialPosition, onD
         })
       }
 
-      // 3. Si llegó, notificar llegada
-      if (res.data.arrived) {
-        if (channelRef.current) {
-          channelRef.current.send({
-            type: 'broadcast',
-            event: 'order-delivered',
-            payload: {}
-          })
-        }
-        onDelivered()
-      }
+      // 3. Si llegó, notificar llegada (pero no marcar como entregado todavía)
+      onArrival(res.data.arrived)
     } catch (err) {
       console.error('Error al actualizar posición:', err)
     }
@@ -103,6 +98,8 @@ export default function DeliveryMap({ orderId, destination, initialPosition, onD
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (!canMove) return
+
       let { lat, lng } = position
 
       switch (e.key) {
@@ -136,7 +133,11 @@ export default function DeliveryMap({ orderId, destination, initialPosition, onD
   return (
     <div>
       <div className="keyboard-hint">
-        <p>Usa las teclas <strong>↑ ↓ ← →</strong> para moverte en el mapa</p>
+        {!canMove ? (
+          <p className="status-warning">⏳ Espera a que el restaurante marque el pedido como <strong>"Listo para recoger"</strong> para empezar a moverte.</p>
+        ) : (
+          <p>Usa las teclas <strong>↑ ↓ ← →</strong> para moverte en el mapa</p>
+        )}
       </div>
       <div style={{ height: '400px', borderRadius: '8px', overflow: 'hidden', marginTop: '0.75rem' }}>
         <MapContainer

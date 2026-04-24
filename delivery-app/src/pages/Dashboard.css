@@ -283,3 +283,23 @@
   font-size: 1.1rem;
   margin-top: 0.5rem;
 }
+
+.delivery-actions {
+  margin-top: 1rem;
+}
+
+.full-width {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.status-warning {
+  color: #856404;
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}

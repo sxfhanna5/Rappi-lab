@@ -34,6 +34,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   Creado: { label: '⏳ Creado', className: 'badge-created' },
   Aceptada: { label: '✅ Aceptada', className: 'badge-delivery' },
   'En entrega': { label: '🚗 En entrega', className: 'badge-delivery' },
+  'Listo para recoger': { label: '📦 Listo para recoger', className: 'badge-delivery' },
   Entregado: { label: '🎉 Entregado', className: 'badge-done' },
   pending: { label: '⏳ Pendiente', className: 'badge-created' },
   accepted: { label: '✅ Aceptada', className: 'badge-delivery' },
@@ -264,6 +265,14 @@ export default function Dashboard() {
                       onClick={() => updateOrderStatus(order.id, 'Aceptada')}
                     >
                       ✅ Aceptar pedido
+                    </button>
+                  )}
+                  {order.status === 'En entrega' && (
+                    <button
+                      className="btn-black action-btn"
+                      onClick={() => updateOrderStatus(order.id, 'Listo para recoger')}
+                    >
+                      📦 Marcar como listo
                     </button>
                   )}
                   {order.status === 'Aceptada' && (

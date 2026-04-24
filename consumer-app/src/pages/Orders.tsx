@@ -26,6 +26,7 @@ const statusLabel: Record<string, string> = {
   Creado: '⏳ Creado',
   accepted: '✅ Aceptada',
   'En entrega': '🚗 En entrega',
+  'Listo para recoger': '📦 Listo para recoger',
   preparing: '🧑‍🍳 Preparando',
   ready: '📦 Lista para recoger',
   Entregado: '🎉 Entregado',

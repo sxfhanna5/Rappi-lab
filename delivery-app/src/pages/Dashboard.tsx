@@ -31,6 +31,7 @@ const statusLabel: Record<string, string> = {
   Creado: '⏳ Creado',
   Aceptada: '✅ Aceptada',
   accepted: '✅ Aceptada',
+  'Listo para recoger': '📦 Listo para recoger',
   'En entrega': '🚗 En entrega',
   preparing: '🧑‍🍳 Preparando',
   ready: '🛵 Lista para recoger',
@@ -47,6 +48,7 @@ export default function Dashboard() {
   const [orderDetail, setOrderDetail] = useState<OrderDetail | null>(null)
   const [activeDelivery, setActiveDelivery] = useState<OrderDetail | null>(null)
   const [delivered, setDelivered] = useState(false)
+  const [isNearDestination, setIsNearDestination] = useState(false)
   const navigate = useNavigate()
   const user = JSON.parse(localStorage.getItem('user') || '{}')
 
@@ -109,24 +111,44 @@ export default function Dashboard() {
     setOrderDetail(null)
   }
 
-  const handleDelivered = () => {
-    setDelivered(true)
-    loadData()
+  const handleArrival = (arrived: boolean) => {
+    setIsNearDestination(arrived)
+  }
 
-    // Notificar a la tienda que se entregó
-    if (activeDelivery?.store_id) {
-      const storeChannel = supabase.channel(`store:${activeDelivery.store_id}`)
-      storeChannel.send({
+  const markAsDelivered = async () => {
+    if (!activeDelivery) return
+    try {
+      await api.patch(`/api/orders/${activeDelivery.id}/status`, { status: 'Entregado' })
+      
+      // Notificar a todos vía Broadcast
+      const orderChannel = supabase.channel(`order:${activeDelivery.id}`)
+      await orderChannel.send({
         type: 'broadcast',
-        event: 'order-status-update',
-        payload: { orderId: activeDelivery.id, status: 'Entregado' }
+        event: 'order-delivered',
+        payload: {}
       })
-    }
+      supabase.removeChannel(orderChannel)
 
-    setTimeout(() => {
-      setActiveDelivery(null)
-      setDelivered(false)
-    }, 3000)
+      if (activeDelivery.store_id) {
+        const storeChannel = supabase.channel(`store:${activeDelivery.store_id}`)
+        await storeChannel.send({
+          type: 'broadcast',
+          event: 'order-status-update',
+          payload: { orderId: activeDelivery.id, status: 'Entregado' }
+        })
+        supabase.removeChannel(storeChannel)
+      }
+
+      setDelivered(true)
+      loadData()
+      setTimeout(() => {
+        setActiveDelivery(null)
+        setDelivered(false)
+        setIsNearDestination(false)
+      }, 3000)
+    } catch (err) {
+      console.error('Error al marcar como entregado:', err)
+    }
   }
 
   const logout = () => {
@@ -174,19 +196,29 @@ export default function Dashboard() {
           ) : (
             <>
               {activeDelivery.destination_lat && activeDelivery.destination_lng ? (
-                <DeliveryMap
-                  orderId={activeDelivery.id}
-                  destination={{
-                    lat: activeDelivery.destination_lat,
-                    lng: activeDelivery.destination_lng
-                  }}
-                  initialPosition={
-                    activeDelivery.delivery_lat && activeDelivery.delivery_lng
-                      ? { lat: activeDelivery.delivery_lat, lng: activeDelivery.delivery_lng }
-                      : null
-                  }
-                  onDelivered={handleDelivered}
-                />
+                <>
+                  <DeliveryMap
+                    orderId={activeDelivery.id}
+                    status={activeDelivery.status}
+                    destination={{
+                      lat: activeDelivery.destination_lat,
+                      lng: activeDelivery.destination_lng
+                    }}
+                    initialPosition={
+                      activeDelivery.delivery_lat && activeDelivery.delivery_lng
+                        ? { lat: activeDelivery.delivery_lat, lng: activeDelivery.delivery_lng }
+                        : null
+                    }
+                    onArrival={handleArrival}
+                  />
+                  {isNearDestination && !delivered && (
+                    <div className="delivery-actions">
+                      <button className="btn-green full-width" onClick={markAsDelivered}>
+                        🏁 Marcar como entregada
+                      </button>
+                    </div>
+                  )}
+                </>
               ) : (
                 <p className="empty-msg">Esta orden no tiene destino registrado</p>
               )}
