@@ -81,6 +81,7 @@ export default function DeliveryMap({ orderId, status, destination, initialPosit
 
       // 2. Emitir broadcast a Supabase (vía canal persistente)
       if (channelRef.current) {
+        console.log('Enviando posición:', pos)
         channelRef.current.send({
           type: 'broadcast',
           event: 'position-update',

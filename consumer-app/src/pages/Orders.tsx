@@ -68,10 +68,15 @@ export default function Orders() {
   useEffect(() => {
     if (!selectedOrder) return
 
-    setArrived(false)
-    setDeliveryPosition(null)
-
+    setArrived(selectedOrder.status === 'Entregado')
     
+    // Inicializar con la posición que ya viene en la orden (si existe)
+    if (selectedOrder.delivery_lat && selectedOrder.delivery_lng) {
+      setDeliveryPosition({ lat: selectedOrder.delivery_lat, lng: selectedOrder.delivery_lng })
+    } else {
+      setDeliveryPosition(null)
+    }
+
     const channel = supabase.channel(`order:${selectedOrder.id}`)
 
     channel.on('broadcast', { event: 'position-update' }, (payload) => {

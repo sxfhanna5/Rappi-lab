@@ -204,7 +204,7 @@ router.patch('/:id/position', authenticateToken, requireRole('delivery'), async 
        WHERE id = $1
        AND delivery_position IS NOT NULL
        AND destination IS NOT NULL
-       AND ST_DWithin(delivery_position, destination, 5)`,
+       AND ST_DWithin(delivery_position, destination, 15)`,
       [req.params.id]
     )
 
