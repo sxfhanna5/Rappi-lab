@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
+import DeliveryMap from '../components/DeliveryMap'
 import './Dashboard.css'
 
 interface Order {
@@ -11,6 +12,8 @@ interface Order {
 }
 
 interface OrderDetail extends Order {
+  destination_lat?: number
+  destination_lng?: number
   items?: Array<{
     id: string
     product_name: string
@@ -21,9 +24,12 @@ interface OrderDetail extends Order {
 
 const statusLabel: Record<string, string> = {
   pending: '⏳ Pendiente',
+  Creado: '⏳ Creado',
   accepted: '✅ Aceptada',
+  'En entrega': '🚗 En entrega',
   preparing: '🧑‍🍳 Preparando',
   ready: '🛵 Lista para recoger',
+  Entregado: '🎉 Entregado',
   delivered: '🎉 Entregada',
   declined: '❌ Rechazada'
 }
@@ -34,12 +40,14 @@ export default function Dashboard() {
   const [tab, setTab] = useState<'available' | 'accepted'>('available')
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null)
   const [orderDetail, setOrderDetail] = useState<OrderDetail | null>(null)
+  const [activeDelivery, setActiveDelivery] = useState<OrderDetail | null>(null)
+  const [delivered, setDelivered] = useState(false)
   const navigate = useNavigate()
   const user = JSON.parse(localStorage.getItem('user') || '{}')
 
   useEffect(() => {
     loadData()
-    const interval = setInterval(() => { loadData() }, 10000)
+    const interval = setInterval(loadData, 10000)
     return () => clearInterval(interval)
   }, [])
 
@@ -58,16 +66,33 @@ export default function Dashboard() {
     setOrderDetail(res.data)
   }
 
-  const updateStatus = async (orderId: string, status: string) => {
-    await api.patch(`/api/orders/${orderId}/status`, { status })
-    setSelectedOrder(null)
-    setOrderDetail(null)
-    loadData()
+  const acceptOrder = async (orderId: string) => {
+    try {
+      await api.patch(`/api/orders/${orderId}/status`, { status: 'En entrega' })
+      const res = await api.get(`/api/orders/${orderId}`)
+      setActiveDelivery(res.data)
+      setSelectedOrder(null)
+      setOrderDetail(null)
+      setDelivered(false)
+      loadData()
+    } catch (err) {
+      console.error('Error al aceptar orden:', err)
+    }
   }
 
   const closeModal = () => {
     setSelectedOrder(null)
     setOrderDetail(null)
+  }
+
+  const handleDelivered = () => {
+    setDelivered(true)
+    loadData()
+
+    setTimeout(() => {
+      setActiveDelivery(null)
+      setDelivered(false)
+    }, 3000)
   }
 
   const logout = () => {
@@ -77,6 +102,8 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-container">
+
+      
       <div className="dashboard-header">
         <div className="dashboard-header-left">
           <h2 className="dashboard-title">Mis entregas</h2>
@@ -89,16 +116,61 @@ export default function Dashboard() {
         </div>
       </div>
 
+   
+      {activeDelivery && (
+        <div className="active-delivery-card">
+          <div className="active-delivery-header">
+            <h3 className="active-delivery-title">
+              Entregando orden #{activeDelivery.id.slice(0, 8)}
+            </h3>
+            {!delivered && (
+              <button
+                className="btn-secondary"
+                onClick={() => setActiveDelivery(null)}
+              >
+                Minimizar
+              </button>
+            )}
+          </div>
+
+          {delivered ? (
+            <div className="delivered-banner">
+              🎉 ¡Entrega completada exitosamente!
+            </div>
+          ) : (
+            <>
+              {activeDelivery.destination_lat && activeDelivery.destination_lng ? (
+                <DeliveryMap
+                  orderId={activeDelivery.id}
+                  destination={{
+                    lat: activeDelivery.destination_lat,
+                    lng: activeDelivery.destination_lng
+                  }}
+                  onDelivered={handleDelivered}
+                />
+              ) : (
+                <p className="empty-msg">Esta orden no tiene destino registrado</p>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+     
       {selectedOrder && orderDetail && (
         <div className="modal-overlay">
           <div className="modal-card">
             <h3 className="modal-title">Detalle de orden</h3>
             <p className="modal-info">
-              <strong>Estado:</strong> {statusLabel[orderDetail.status]}
+              <strong>Tienda:</strong> {orderDetail.store_name}
+            </p>
+            <p className="modal-info">
+              <strong>Estado:</strong> {statusLabel[orderDetail.status] || orderDetail.status}
             </p>
             <p className="modal-info">
               <strong>Fecha:</strong> {new Date(orderDetail.created_at).toLocaleString()}
             </p>
+
             <h4 className="modal-items-title">Productos</h4>
             {orderDetail.items?.map(item => (
               <div key={item.id} className="modal-item">
@@ -106,22 +178,14 @@ export default function Dashboard() {
                 <span>${(item.price * item.quantity).toLocaleString('es-CO')}</span>
               </div>
             ))}
+
             <div className="modal-actions">
-              {/* Delivery acepta o rechaza */}
-              {orderDetail.status === 'pending' && (
-                <>
-                  <button className="btn-green" onClick={() => updateStatus(selectedOrder, 'accepted')}>
-                    Aceptar orden
-                  </button>
-                  <button className="btn-red" onClick={() => updateStatus(selectedOrder, 'declined')}>
-                    Rechazar
-                  </button>
-                </>
-              )}
-              {/* Delivery recoge cuando la tienda la marca como lista */}
-              {orderDetail.status === 'ready' && (
-                <button className="btn-green" onClick={() => updateStatus(selectedOrder, 'delivered')}>
-                  Marcar como entregada
+              {(orderDetail.status === 'pending' || orderDetail.status === 'Creado') && (
+                <button
+                  className="btn-green"
+                  onClick={() => acceptOrder(orderDetail.id)}
+                >
+                  ✅ Aceptar y comenzar entrega
                 </button>
               )}
               <button className="btn-secondary" onClick={closeModal}>Cerrar</button>
@@ -130,6 +194,7 @@ export default function Dashboard() {
         </div>
       )}
 
+      
       <div className="tabs">
         <button
           className={`tab ${tab === 'available' ? 'active' : ''}`}
@@ -145,6 +210,7 @@ export default function Dashboard() {
         </button>
       </div>
 
+     
       <div className="orders-list">
         {tab === 'available' && (
           available.length === 0
@@ -153,7 +219,7 @@ export default function Dashboard() {
               <div key={order.id} className="item-card">
                 <div className="item-info">
                   <p className="item-name">{order.store_name}</p>
-                  <p className="item-status">{statusLabel[order.status]}</p>
+                  <p className="item-status">{statusLabel[order.status] || order.status}</p>
                   <p className="item-date">{new Date(order.created_at).toLocaleString()}</p>
                 </div>
                 <button className="btn-black" onClick={() => viewDetail(order.id)}>
@@ -170,7 +236,7 @@ export default function Dashboard() {
               <div key={order.id} className="item-card">
                 <div className="item-info">
                   <p className="item-name">Orden #{order.id.slice(0, 8)}</p>
-                  <p className="item-status">{statusLabel[order.status]}</p>
+                  <p className="item-status">{statusLabel[order.status] || order.status}</p>
                   <p className="item-date">{new Date(order.created_at).toLocaleString()}</p>
                 </div>
                 <button className="btn-black" onClick={() => viewDetail(order.id)}>

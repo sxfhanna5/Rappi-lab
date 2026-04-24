@@ -78,9 +78,14 @@ router.get('/store', authenticateToken, requireRole('store'), async (req: AuthRe
 router.get('/available', authenticateToken, requireRole('delivery'), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const result = await pool.query(
-      `SELECT o.*, s.name as store_name FROM orders o
+      `SELECT o.*,
+        s.name as store_name,
+        ST_Y(o.destination::geometry) as destination_lat,
+        ST_X(o.destination::geometry) as destination_lng
+       FROM orders o
        JOIN stores s ON o.store_id = s.id
-       WHERE o.status = 'pending' ORDER BY o.created_at DESC`
+       WHERE o.status = 'Creado'
+       ORDER BY o.created_at DESC`
     )
     res.json(result.rows)
   } catch (err) {
@@ -91,7 +96,14 @@ router.get('/available', authenticateToken, requireRole('delivery'), async (req:
 router.get('/accepted', authenticateToken, requireRole('delivery'), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const result = await pool.query(
-      'SELECT * FROM orders WHERE delivery_id = $1 ORDER BY created_at DESC',
+      `SELECT o.*,
+        s.name as store_name,
+        ST_Y(o.destination::geometry) as destination_lat,
+        ST_X(o.destination::geometry) as destination_lng
+       FROM orders o
+       JOIN stores s ON o.store_id = s.id
+       WHERE o.delivery_id = $1
+       ORDER BY o.created_at DESC`,
       [req.user!.id]
     )
     res.json(result.rows)
