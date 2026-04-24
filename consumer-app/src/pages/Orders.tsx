@@ -157,9 +157,13 @@ export default function Orders() {
             {selectedOrder.destination_lat && selectedOrder.destination_lng ? (
               <>
                 <p className="map-hint">
-                  {deliveryPosition
-                    ? '🚗 El repartidor está en camino'
-                    : '⏳ Esperando que el repartidor acepte la orden'}
+                  {selectedOrder.status === 'Entregado'
+                    ? '🎉 El pedido ha sido entregado'
+                    : deliveryPosition
+                      ? '🚗 El repartidor está en camino'
+                      : (selectedOrder.status === 'En entrega' || selectedOrder.status === 'Listo para recoger')
+                        ? '⏳ El repartidor ya aceptó tu orden y se está preparando'
+                        : '⏳ Esperando que el repartidor acepte la orden'}
                 </p>
                 <TrackingMap
                   destination={{

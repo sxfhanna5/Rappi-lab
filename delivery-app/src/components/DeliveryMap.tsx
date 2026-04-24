@@ -128,7 +128,7 @@ export default function DeliveryMap({ orderId, status, destination, initialPosit
       window.removeEventListener('keydown', handleKeyDown)
       if (throttleRef.current) clearTimeout(throttleRef.current)
     }
-  }, [position, orderId])
+  }, [position, orderId, canMove])
 
   return (
     <div>
