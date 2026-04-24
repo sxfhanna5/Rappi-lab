@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
+import { supabase } from '../supabase'
 import './Dashboard.css'
 
 interface Store {
@@ -28,20 +29,28 @@ interface NewProduct {
   description: string
 }
 
-const statusLabel: Record<string, string> = {
-  pending: '⏳ Pendiente',
-  accepted: '✅ Aceptada por delivery',
-  preparing: '🧑‍🍳 Preparando',
-  ready: '🛵 Lista para recoger',
-  delivered: '🎉 Entregada',
-  declined: '❌ Rechazada'
+
+const statusConfig: Record<string, { label: string; className: string }> = {
+  Creado: { label: '⏳ Creado', className: 'badge-created' },
+  'En entrega': { label: '🚗 En entrega', className: 'badge-delivery' },
+  Entregado: { label: '🎉 Entregado', className: 'badge-done' },
+  pending: { label: '⏳ Pendiente', className: 'badge-created' },
+  accepted: { label: '✅ Aceptada', className: 'badge-delivery' },
+  preparing: { label: '🧑‍🍳 Preparando', className: 'badge-delivery' },
+  ready: { label: '🛵 Lista', className: 'badge-delivery' },
+  delivered: { label: '🎉 Entregada', className: 'badge-done' },
+  declined: { label: '❌ Rechazada', className: 'badge-declined' }
 }
 
 export default function Dashboard() {
   const [store, setStore] = useState<Store | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [orders, setOrders] = useState<Order[]>([])
-  const [newProduct, setNewProduct] = useState<NewProduct>({ name: '', price: '', description: '' })
+  const [newProduct, setNewProduct] = useState<NewProduct>({
+    name: '',
+    price: '',
+    description: ''
+  })
   const [msg, setMsg] = useState('')
   const [tab, setTab] = useState<'products' | 'orders'>('products')
   const navigate = useNavigate()
@@ -49,9 +58,27 @@ export default function Dashboard() {
 
   useEffect(() => {
     loadData()
-    const interval = setInterval(() => { loadData() }, 10000)
+    const interval = setInterval(loadData, 10000)
     return () => clearInterval(interval)
   }, [])
+
+
+  useEffect(() => {
+    if (!store) return
+
+   
+    const channel = supabase.channel(`store:${store.id}`)
+
+    channel.on('broadcast', { event: 'order-status-update' }, () => {
+      loadData()
+    })
+
+    channel.subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [store?.id])
 
   const loadData = async () => {
     const [storeRes, ordersRes] = await Promise.all([
@@ -60,7 +87,9 @@ export default function Dashboard() {
     ])
     setStore(storeRes.data)
     if (storeRes.data) {
-      const productsRes = await api.get(`/api/products?storeId=${storeRes.data.id}`)
+      const productsRes = await api.get(
+        `/api/products?storeId=${storeRes.data.id}`
+      )
       setProducts(productsRes.data)
     }
     setOrders(ordersRes.data)
@@ -75,7 +104,10 @@ export default function Dashboard() {
     e.preventDefault()
     setMsg('')
     try {
-      await api.post('/api/products', { ...newProduct, price: parseInt(newProduct.price) })
+      await api.post('/api/products', {
+        ...newProduct,
+        price: parseInt(newProduct.price)
+      })
       setMsg('Producto creado exitosamente')
       setNewProduct({ name: '', price: '', description: '' })
       loadData()
@@ -99,6 +131,8 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-container">
+
+  
       <div className="dashboard-header">
         <div className="dashboard-header-left">
           <h2 className="dashboard-title">{store?.name || 'Mi Tienda'}</h2>
@@ -117,6 +151,7 @@ export default function Dashboard() {
         </div>
       </div>
 
+    
       <div className="tabs">
         <button
           className={`tab ${tab === 'products' ? 'active' : ''}`}
@@ -132,6 +167,7 @@ export default function Dashboard() {
         </button>
       </div>
 
+    
       {tab === 'products' && (
         <div>
           <div className="product-form-card">
@@ -159,12 +195,16 @@ export default function Dashboard() {
                 value={newProduct.description}
                 onChange={e => setNewProduct({ ...newProduct, description: e.target.value })}
               />
-              <button className="btn-green" type="submit">Agregar producto</button>
+              <button className="btn-green" type="submit">
+                Agregar producto
+              </button>
             </form>
           </div>
 
           <div className="items-list">
-            {products.length === 0 && <p className="empty-msg">No hay productos aún</p>}
+            {products.length === 0 && (
+              <p className="empty-msg">No hay productos aún</p>
+            )}
             {products.map(p => (
               <div key={p.id} className="item-card">
                 <div className="item-info">
@@ -178,32 +218,51 @@ export default function Dashboard() {
         </div>
       )}
 
+    
       {tab === 'orders' && (
         <div className="items-list">
-          {orders.length === 0 && <p className="empty-msg-centered">No hay órdenes aún</p>}
-          {orders.map(order => (
-            <div key={order.id} className="item-card">
-              <div className="item-info">
-                <p className="item-name">Orden #{order.id.slice(0, 8)}</p>
-                <p className="item-desc">{statusLabel[order.status]}</p>
-                <p className="item-price-small">{new Date(order.created_at).toLocaleString()}</p>
+          {orders.length === 0 && (
+            <p className="empty-msg-centered">No hay órdenes aún</p>
+          )}
+          {orders.map(order => {
+            const config = statusConfig[order.status] || {
+              label: order.status,
+              className: 'badge-created'
+            }
+            return (
+              <div key={order.id} className="item-card">
+                <div className="item-info">
+                  <p className="item-name">Orden #{order.id.slice(0, 8)}</p>
+                  <p className="item-price-small">
+                    {new Date(order.created_at).toLocaleString()}
+                  </p>
+                </div>
+                <div className="order-right">
+                 
+                  <span className={`status-badge ${config.className}`}>
+                    {config.label}
+                  </span>
+               
+                  {order.status === 'accepted' && (
+                    <button
+                      className="btn-black action-btn"
+                      onClick={() => updateOrderStatus(order.id, 'preparing')}
+                    >
+                      Comenzar a preparar
+                    </button>
+                  )}
+                  {order.status === 'preparing' && (
+                    <button
+                      className="btn-black action-btn"
+                      onClick={() => updateOrderStatus(order.id, 'ready')}
+                    >
+                      Marcar como lista
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="order-actions">
-                {/* La tienda prepara cuando el delivery acepta */}
-                {order.status === 'accepted' && (
-                  <button className="btn-black" onClick={() => updateOrderStatus(order.id, 'preparing')}>
-                    Comenzar a preparar
-                  </button>
-                )}
-                {/* La tienda marca como lista cuando termina */}
-                {order.status === 'preparing' && (
-                  <button className="btn-black" onClick={() => updateOrderStatus(order.id, 'ready')}>
-                    Marcar como lista
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

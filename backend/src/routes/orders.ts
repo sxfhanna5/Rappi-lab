@@ -66,7 +66,12 @@ router.get('/store', authenticateToken, requireRole('store'), async (req: AuthRe
     const storeResult = await pool.query('SELECT id FROM stores WHERE user_id = $1', [req.user!.id])
     const storeId = storeResult.rows[0]?.id
     const result = await pool.query(
-      'SELECT * FROM orders WHERE store_id = $1 ORDER BY created_at DESC',
+      `SELECT o.*,
+        ST_Y(o.destination::geometry) as destination_lat,
+        ST_X(o.destination::geometry) as destination_lng
+       FROM orders o
+       WHERE o.store_id = $1
+       ORDER BY o.created_at DESC`,
       [storeId]
     )
     res.json(result.rows)

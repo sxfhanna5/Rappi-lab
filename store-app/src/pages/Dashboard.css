@@ -252,3 +252,48 @@
   text-align: center;
   margin-top: 3rem;
 }
+
+/* Badges de estado */
+.status-badge {
+  display: inline-block;
+  padding: 0.3rem 0.85rem;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-created {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.badge-delivery {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.badge-done {
+  background: var(--color-open-bg);
+  color: var(--color-open);
+}
+
+.badge-declined {
+  background: var(--color-closed-bg);
+  color: var(--color-closed);
+}
+
+/* Layout derecho de la card de orden */
+.order-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  font-size: 0.82rem;
+  padding: 0.45rem 0.9rem;
+  white-space: nowrap;
+}
