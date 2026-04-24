@@ -254,11 +254,8 @@ export default function Dashboard() {
                   </p>
                 </div>
                 <div className="order-right">
-                 
-                  {order.status !== 'Creado' && 
-                   order.status !== 'Aceptada' && 
-                   order.status !== 'En entrega' && 
-                   order.status !== 'preparing' && (
+                  {/* Mostrar badge solo para estados después de la aceptación inicial */}
+                  {order.status !== 'Creado' && order.status !== 'Aceptada' && (
                     <span className={`status-badge ${config.className}`}>
                       {config.label}
                     </span>
@@ -272,7 +269,7 @@ export default function Dashboard() {
                       ✅ Aceptar pedido
                     </button>
                   )}
-                  {(order.status === 'Aceptada' || order.status === 'En entrega') && (
+                  {order.status === 'Aceptada' && (
                     <button
                       className="btn-black action-btn"
                       onClick={() => updateOrderStatus(order.id, 'preparing')}

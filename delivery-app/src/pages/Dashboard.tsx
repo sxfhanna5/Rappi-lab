@@ -107,6 +107,7 @@ export default function Dashboard() {
       const res = await api.get(`/api/orders/${orderId}`)
       const orderData = res.data
       setActiveDelivery(orderData)
+      setTab('accepted')
       setIsMinimized(false)
       setSelectedOrder(null)
       setOrderDetail(null)
@@ -240,81 +241,84 @@ export default function Dashboard() {
               </div>
             ))
         ) : (
-          accepted.length === 0
-            ? <p className="empty-msg">No tienes órdenes aceptadas aún</p>
-            : accepted.map(order => (
-              <div key={order.id} className="item-card">
-                <div className="item-info">
-                  <p className="item-name">Orden #{order.id.slice(0, 8)}</p>
-                  <p className="item-status">{statusLabel[order.status] || order.status}</p>
-                  <p className="item-date">{new Date(order.created_at).toLocaleString()}</p>
+          <>
+            {/* Mapa de entrega activa al inicio de "Mis órdenes" */}
+            {activeDelivery && (
+              <div className={`active-delivery-card ${isMinimized ? 'minimized' : ''}`} style={{ marginBottom: '2rem' }}>
+                <div className="active-delivery-header">
+                  <h3 className="active-delivery-title">
+                    {isMinimized 
+                      ? `📦 Entrega en curso: #${activeDelivery.id.slice(0, 8)}`
+                      : `Entregando orden #${activeDelivery.id.slice(0, 8)}`}
+                  </h3>
+                  {!delivered && (
+                    <button
+                      className="btn-secondary"
+                      onClick={() => setIsMinimized(!isMinimized)}
+                    >
+                      {isMinimized ? 'Ver mapa' : 'Minimizar'}
+                    </button>
+                  )}
                 </div>
-                <button className="btn-black" onClick={() => viewDetail(order.id)}>
-                  Ver detalle
-                </button>
+
+                {!isMinimized && (
+                  delivered ? (
+                    <div className="delivered-banner">
+                      🎉 ¡Entrega completada exitosamente!
+                    </div>
+                  ) : (
+                    <>
+                      {activeDelivery.destination_lat && activeDelivery.destination_lng ? (
+                        <>
+                          <DeliveryMap
+                            orderId={activeDelivery.id}
+                            status={activeDelivery.status}
+                            destination={{
+                              lat: activeDelivery.destination_lat,
+                              lng: activeDelivery.destination_lng
+                            }}
+                            initialPosition={
+                              activeDelivery.delivery_lat && activeDelivery.delivery_lng
+                                ? { lat: activeDelivery.delivery_lat, lng: activeDelivery.delivery_lng }
+                                : null
+                            }
+                            onArrival={handleArrival}
+                          />
+                          {isNearDestination && !delivered && (
+                            <div className="delivery-actions">
+                              <button className="btn-green full-width" onClick={markAsDelivered}>
+                                🏁 Marcar como entregada
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <p className="empty-msg">Esta orden no tiene destino registrado</p>
+                      )}
+                    </>
+                  )
+                )}
               </div>
-            ))
+            )}
+
+            {accepted.length === 0 && !activeDelivery
+              ? <p className="empty-msg">No tienes órdenes aceptadas aún</p>
+              : accepted.filter(o => o.id !== activeDelivery?.id).map(order => (
+                <div key={order.id} className="item-card">
+                  <div className="item-info">
+                    <p className="item-name">Orden #{order.id.slice(0, 8)}</p>
+                    <p className="item-status">{statusLabel[order.status] || order.status}</p>
+                    <p className="item-date">{new Date(order.created_at).toLocaleString()}</p>
+                  </div>
+                  <button className="btn-black" onClick={() => viewDetail(order.id)}>
+                    Ver detalle
+                  </button>
+                </div>
+              ))
+            }
+          </>
         )}
       </div>
-
-      {/* Mapa de entrega activa al final */}
-      {activeDelivery && (
-        <div className={`active-delivery-card ${isMinimized ? 'minimized' : ''}`} style={{ marginTop: '2rem' }}>
-          <div className="active-delivery-header">
-            <h3 className="active-delivery-title">
-              {isMinimized 
-                ? `📦 Entrega en curso: #${activeDelivery.id.slice(0, 8)}`
-                : `Entregando orden #${activeDelivery.id.slice(0, 8)}`}
-            </h3>
-            {!delivered && (
-              <button
-                className="btn-secondary"
-                onClick={() => setIsMinimized(!isMinimized)}
-              >
-                {isMinimized ? 'Ver mapa' : 'Minimizar'}
-              </button>
-            )}
-          </div>
-
-          {!isMinimized && (
-            delivered ? (
-              <div className="delivered-banner">
-                🎉 ¡Entrega completada exitosamente!
-              </div>
-            ) : (
-              <>
-                {activeDelivery.destination_lat && activeDelivery.destination_lng ? (
-                  <>
-                    <DeliveryMap
-                      orderId={activeDelivery.id}
-                      status={activeDelivery.status}
-                      destination={{
-                        lat: activeDelivery.destination_lat,
-                        lng: activeDelivery.destination_lng
-                      }}
-                      initialPosition={
-                        activeDelivery.delivery_lat && activeDelivery.delivery_lng
-                          ? { lat: activeDelivery.delivery_lat, lng: activeDelivery.delivery_lng }
-                          : null
-                      }
-                      onArrival={handleArrival}
-                    />
-                    {isNearDestination && !delivered && (
-                      <div className="delivery-actions">
-                        <button className="btn-green full-width" onClick={markAsDelivered}>
-                          🏁 Marcar como entregada
-                        </button>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <p className="empty-msg">Esta orden no tiene destino registrado</p>
-                )}
-              </>
-            )
-          )}
-        </div>
-      )}
 
       {selectedOrder && orderDetail && (
         <div className="modal-overlay">
