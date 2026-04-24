@@ -89,8 +89,9 @@ router.get('/available', authenticateToken, requireRole('delivery'), async (req:
         ST_X(o.destination::geometry) as destination_lng
        FROM orders o
        JOIN stores s ON o.store_id = s.id
-       WHERE o.status = 'Creado'
-       ORDER BY o.created_at DESC`
+       WHERE o.status = $1
+       ORDER BY o.created_at DESC`,
+      [OrderStatus.ACCEPTED]
     )
     res.json(result.rows)
   } catch (err) {
@@ -162,12 +163,12 @@ router.patch('/:id/status', authenticateToken, async (req: AuthRequest, res: Res
 router.patch('/:id/accept', authenticateToken, requireRole('delivery'), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const result = await pool.query(
-      'UPDATE orders SET status = $1, delivery_id = $2 WHERE id = $3 RETURNING *',
-      [OrderStatus.IN_DELIVERY, req.user!.id, req.params.id]
+      'UPDATE orders SET status = $1, delivery_id = $2 WHERE id = $3 AND status = $4 RETURNING *',
+      [OrderStatus.IN_DELIVERY, req.user!.id, req.params.id, OrderStatus.ACCEPTED]
     )
     
     if (result.rows.length === 0) {
-      res.status(404).json({ error: 'Orden no encontrada' })
+      res.status(404).json({ error: 'Orden no encontrada o no está disponible para entrega' })
       return
     }
 

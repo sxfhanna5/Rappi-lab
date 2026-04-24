@@ -32,6 +32,7 @@ interface NewProduct {
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   Creado: { label: '⏳ Creado', className: 'badge-created' },
+  Aceptada: { label: '✅ Aceptada', className: 'badge-delivery' },
   'En entrega': { label: '🚗 En entrega', className: 'badge-delivery' },
   Entregado: { label: '🎉 Entregado', className: 'badge-done' },
   pending: { label: '⏳ Pendiente', className: 'badge-created' },
@@ -69,7 +70,8 @@ export default function Dashboard() {
    
     const channel = supabase.channel(`store:${store.id}`)
 
-    channel.on('broadcast', { event: 'order-status-update' }, () => {
+    channel.on('broadcast', { event: 'order-status-update' }, (payload) => {
+      console.log('Notificación de estado recibida:', payload)
       loadData()
     })
 
@@ -126,12 +128,12 @@ export default function Dashboard() {
 
       // Notificar al consumidor del cambio de estado
       const channel = supabase.channel(`order:${orderId}`)
-      await channel.send({
+      channel.send({
         type: 'broadcast',
         event: 'order-status-update',
         payload: { status }
       })
-      supabase.removeChannel(channel)
+      // No removemos el canal inmediatamente para asegurar que el mensaje se envíe
     } catch (err) {
       console.error('Error al actualizar estado:', err)
     }
@@ -256,7 +258,15 @@ export default function Dashboard() {
                     {config.label}
                   </span>
                
-                  {order.status === 'accepted' && (
+                  {order.status === 'Creado' && (
+                    <button
+                      className="btn-black action-btn"
+                      onClick={() => updateOrderStatus(order.id, 'Aceptada')}
+                    >
+                      ✅ Aceptar pedido
+                    </button>
+                  )}
+                  {order.status === 'Aceptada' && (
                     <button
                       className="btn-black action-btn"
                       onClick={() => updateOrderStatus(order.id, 'preparing')}

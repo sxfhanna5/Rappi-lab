@@ -74,25 +74,29 @@ export default function Orders() {
     const channel = supabase.channel(`order:${selectedOrder.id}`)
 
     channel.on('broadcast', { event: 'position-update' }, (payload) => {
+      console.log('Movimiento recibido:', payload.payload)
       const { lat, lng } = payload.payload as Position
       setDeliveryPosition({ lat, lng })
     })
 
-    channel.on('broadcast', { event: 'order-accepted' }, () => {
+    channel.on('broadcast', { event: 'order-accepted' }, (payload) => {
+      console.log('Orden aceptada por repartidor:', payload)
       loadOrders()
       if (selectedOrder) {
         loadOrderDetail(selectedOrder.id)
       }
     })
 
-    channel.on('broadcast', { event: 'order-status-update' }, () => {
+    channel.on('broadcast', { event: 'order-status-update' }, (payload) => {
+      console.log('Estado de orden actualizado:', payload)
       loadOrders()
       if (selectedOrder) {
         loadOrderDetail(selectedOrder.id)
       }
     })
 
-    channel.on('broadcast', { event: 'order-delivered' }, () => {
+    channel.on('broadcast', { event: 'order-delivered' }, (payload) => {
+      console.log('Orden entregada:', payload)
       setArrived(true)
       loadOrders()
     })

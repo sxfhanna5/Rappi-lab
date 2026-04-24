@@ -29,6 +29,7 @@ interface OrderDetail extends Order {
 const statusLabel: Record<string, string> = {
   pending: '⏳ Pendiente',
   Creado: '⏳ Creado',
+  Aceptada: '✅ Aceptada',
   accepted: '✅ Aceptada',
   'En entrega': '🚗 En entrega',
   preparing: '🧑‍🍳 Preparando',
@@ -82,24 +83,22 @@ export default function Dashboard() {
       loadData()
 
       // Notificar a la tienda del cambio de estado
-       if (orderData.store_id) {
-         const storeChannel = supabase.channel(`store:${orderData.store_id}`)
-         await storeChannel.send({
-           type: 'broadcast',
-           event: 'order-status-update',
-           payload: { orderId, status: 'En entrega' }
-         })
-         supabase.removeChannel(storeChannel)
-       }
+        if (orderData.store_id) {
+          const storeChannel = supabase.channel(`store:${orderData.store_id}`)
+          storeChannel.send({
+            type: 'broadcast',
+            event: 'order-status-update',
+            payload: { orderId, status: 'En entrega' }
+          })
+        }
 
        // Notificar al consumidor
-       const orderChannel = supabase.channel(`order:${orderId}`)
-       await orderChannel.send({
-         type: 'broadcast',
-         event: 'order-accepted',
-         payload: { orderId, status: 'En entrega' }
-       })
-       supabase.removeChannel(orderChannel)
+        const orderChannel = supabase.channel(`order:${orderId}`)
+        orderChannel.send({
+          type: 'broadcast',
+          event: 'order-accepted',
+          payload: { orderId, status: 'En entrega' }
+        })
     } catch (err) {
       console.error('Error al aceptar orden:', err)
     }
