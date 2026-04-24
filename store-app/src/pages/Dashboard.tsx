@@ -255,9 +255,11 @@ export default function Dashboard() {
                 </div>
                 <div className="order-right">
                  
-                  <span className={`status-badge ${config.className}`}>
-                    {config.label}
-                  </span>
+                  {order.status !== 'Creado' && order.status !== 'Aceptada' && (
+                    <span className={`status-badge ${config.className}`}>
+                      {config.label}
+                    </span>
+                  )}
                
                   {order.status === 'Creado' && (
                     <button

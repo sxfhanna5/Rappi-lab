@@ -208,9 +208,60 @@ export default function Dashboard() {
         </div>
       </div>
 
-   
+      <div className="tabs">
+        <button
+          className={`tab ${tab === 'available' ? 'active' : ''}`}
+          onClick={() => setTab('available')}
+        >
+          Disponibles ({available.length})
+        </button>
+        <button
+          className={`tab ${tab === 'accepted' ? 'active' : ''}`}
+          onClick={() => setTab('accepted')}
+        >
+          Mis órdenes ({accepted.length})
+        </button>
+      </div>
+
+      <div className="orders-list">
+        {tab === 'available' && (
+          available.length === 0
+            ? <p className="empty-msg">No hay órdenes disponibles</p>
+            : available.map(order => (
+              <div key={order.id} className="item-card">
+                <div className="item-info">
+                  <p className="item-name">{order.store_name}</p>
+                  <p className="item-status">{statusLabel[order.status] || order.status}</p>
+                  <p className="item-date">{new Date(order.created_at).toLocaleString()}</p>
+                </div>
+                <button className="btn-black" onClick={() => viewDetail(order.id)}>
+                  Ver detalle
+                </button>
+              </div>
+            ))
+        )}
+
+        {tab === 'accepted' && (
+          accepted.length === 0
+            ? <p className="empty-msg">No tienes órdenes aceptadas</p>
+            : accepted.map(order => (
+              <div key={order.id} className="item-card">
+                <div className="item-info">
+                  <p className="item-name">Orden #{order.id.slice(0, 8)}</p>
+                  <p className="item-status">{statusLabel[order.status] || order.status}</p>
+                  <p className="item-date">{new Date(order.created_at).toLocaleString()}</p>
+                </div>
+                <button className="btn-black" onClick={() => viewDetail(order.id)}>
+                  Ver detalle
+                </button>
+              </div>
+            ))
+        )}
+      </div>
+
+      {/* Mapa de entrega activa al final */}
       {activeDelivery && (
-        <div className={`active-delivery-card ${isMinimized ? 'minimized' : ''}`}>
+        <div className={`active-delivery-card ${isMinimized ? 'minimized' : ''}`} style={{ marginTop: '2rem' }}>
           <div className="active-delivery-header">
             <h3 className="active-delivery-title">
               {isMinimized 
@@ -267,7 +318,6 @@ export default function Dashboard() {
         </div>
       )}
 
-     
       {selectedOrder && orderDetail && (
         <div className="modal-overlay">
           <div className="modal-card">
@@ -312,59 +362,6 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-
-      
-      <div className="tabs">
-        <button
-          className={`tab ${tab === 'available' ? 'active' : ''}`}
-          onClick={() => setTab('available')}
-        >
-          Disponibles ({available.length})
-        </button>
-        <button
-          className={`tab ${tab === 'accepted' ? 'active' : ''}`}
-          onClick={() => setTab('accepted')}
-        >
-          Mis órdenes ({accepted.length})
-        </button>
-      </div>
-
-     
-      <div className="orders-list">
-        {tab === 'available' && (
-          available.length === 0
-            ? <p className="empty-msg">No hay órdenes disponibles</p>
-            : available.map(order => (
-              <div key={order.id} className="item-card">
-                <div className="item-info">
-                  <p className="item-name">{order.store_name}</p>
-                  <p className="item-status">{statusLabel[order.status] || order.status}</p>
-                  <p className="item-date">{new Date(order.created_at).toLocaleString()}</p>
-                </div>
-                <button className="btn-black" onClick={() => viewDetail(order.id)}>
-                  Ver detalle
-                </button>
-              </div>
-            ))
-        )}
-
-        {tab === 'accepted' && (
-          accepted.length === 0
-            ? <p className="empty-msg">No tienes órdenes aceptadas</p>
-            : accepted.map(order => (
-              <div key={order.id} className="item-card">
-                <div className="item-info">
-                  <p className="item-name">Orden #{order.id.slice(0, 8)}</p>
-                  <p className="item-status">{statusLabel[order.status] || order.status}</p>
-                  <p className="item-date">{new Date(order.created_at).toLocaleString()}</p>
-                </div>
-                <button className="btn-black" onClick={() => viewDetail(order.id)}>
-                  Ver detalle
-                </button>
-              </div>
-            ))
-        )}
-      </div>
     </div>
   )
 }

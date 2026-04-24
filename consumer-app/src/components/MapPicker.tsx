@@ -40,7 +40,7 @@ export default function MapPicker({ position, onSelect }: MapPickerProps) {
     : [3.4516, -76.5320]
 
   return (
-    <div style={{ height: '300px', borderRadius: '8px', overflow: 'hidden', marginBottom: '1rem' }}>
+    <div style={{ height: '500px', borderRadius: '12px', overflow: 'hidden', marginBottom: '1.5rem', border: '2px solid #eee' }}>
       <MapContainer
         center={center}
         zoom={15}
