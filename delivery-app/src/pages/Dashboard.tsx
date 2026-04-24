@@ -58,6 +58,24 @@ export default function Dashboard() {
     return () => clearInterval(interval)
   }, [])
 
+  useEffect(() => {
+    if (!activeDelivery) return
+
+    const channel = supabase.channel(`order:${activeDelivery.id}`)
+    
+    channel.on('broadcast', { event: 'order-status-update' }, (payload) => {
+      const { status } = payload.payload
+      setActiveDelivery(prev => prev ? { ...prev, status } : null)
+      loadData()
+    })
+
+    channel.subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [activeDelivery?.id])
+
   const loadData = async () => {
     const [availRes, accRes] = await Promise.all([
       api.get('/api/orders/available'),
@@ -251,7 +269,7 @@ export default function Dashboard() {
             ))}
 
             <div className="modal-actions">
-              {(orderDetail.status === 'pending' || orderDetail.status === 'Creado') && (
+              {(orderDetail.status === 'Aceptada') && (
                 <button
                   className="btn-green"
                   onClick={() => acceptOrder(orderDetail.id)}
