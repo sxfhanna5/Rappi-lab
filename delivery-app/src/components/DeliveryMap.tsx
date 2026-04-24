@@ -32,6 +32,7 @@ interface Position {
 interface DeliveryMapProps {
   orderId: string
   destination: Position
+  initialPosition?: Position | null
   onDelivered: () => void
 }
 
@@ -45,39 +46,53 @@ function MapUpdater({ position }: { position: Position }) {
   return null
 }
 
-export default function DeliveryMap({ orderId, destination, onDelivered }: DeliveryMapProps) {
-  const [position, setPosition] = useState<Position>(destination)
+export default function DeliveryMap({ orderId, destination, initialPosition, onDelivered }: DeliveryMapProps) {
+  // Si no hay posición inicial, empezamos en el centro de Cali (o cerca del destino pero no en él)
+  const defaultPos = initialPosition || { lat: 3.4516, lng: -76.5320 }
+  
+  const [position, setPosition] = useState<Position>(defaultPos)
   const throttleRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const pendingPosition = useRef<Position>(destination)
+  const pendingPosition = useRef<Position>(defaultPos)
+  const channelRef = useRef<any>(null)
 
+  // Inicializar el canal de Supabase una sola vez
+  useEffect(() => {
+    channelRef.current = supabase.channel(`order:${orderId}`)
+    channelRef.current.subscribe()
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current)
+      }
+    }
+  }, [orderId])
 
   const updatePosition = async (pos: Position) => {
     try {
-   
+      // 1. Actualizar en BD
       const res = await api.patch(`/api/orders/${orderId}/position`, {
         lat: pos.lat,
         lng: pos.lng
       })
 
-  
-      const channel = supabase.channel(`order:${orderId}`)
-      await channel.send({
-        type: 'broadcast',
-        event: 'position-update',
-        payload: { lat: pos.lat, lng: pos.lng }
-      })
-      supabase.removeChannel(channel)
-
-    
-      if (res.data.arrived) {
-  
-        const deliveredChannel = supabase.channel(`order:${orderId}`)
-        await deliveredChannel.send({
+      // 2. Emitir broadcast a Supabase (vía canal persistente)
+      if (channelRef.current) {
+        channelRef.current.send({
           type: 'broadcast',
-          event: 'order-delivered',
-          payload: {}
+          event: 'position-update',
+          payload: { lat: pos.lat, lng: pos.lng }
         })
-        supabase.removeChannel(deliveredChannel)
+      }
+
+      // 3. Si llegó, notificar llegada
+      if (res.data.arrived) {
+        if (channelRef.current) {
+          channelRef.current.send({
+            type: 'broadcast',
+            event: 'order-delivered',
+            payload: {}
+          })
+        }
         onDelivered()
       }
     } catch (err) {

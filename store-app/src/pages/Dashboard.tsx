@@ -120,8 +120,21 @@ export default function Dashboard() {
   }
 
   const updateOrderStatus = async (orderId: string, status: string) => {
-    await api.patch(`/api/orders/${orderId}/status`, { status })
-    loadData()
+    try {
+      await api.patch(`/api/orders/${orderId}/status`, { status })
+      loadData()
+
+      // Notificar al consumidor del cambio de estado
+      const channel = supabase.channel(`order:${orderId}`)
+      await channel.send({
+        type: 'broadcast',
+        event: 'order-status-update',
+        payload: { status }
+      })
+      supabase.removeChannel(channel)
+    } catch (err) {
+      console.error('Error al actualizar estado:', err)
+    }
   }
 
   const logout = () => {

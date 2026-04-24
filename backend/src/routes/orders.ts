@@ -149,23 +149,32 @@ router.get('/:id', authenticateToken, async (req: Request, res: Response): Promi
 router.patch('/:id/status', authenticateToken, async (req: AuthRequest, res: Response): Promise<void> => {
   const { status } = req.body
   try {
-    let result
-
-  
-    if (status === OrderStatus.IN_DELIVERY && req.user!.role === 'delivery') {
-      result = await pool.query(
-        'UPDATE orders SET status = $1, delivery_id = $2 WHERE id = $3 RETURNING *',
-        [OrderStatus.IN_DELIVERY, req.user!.id, req.params.id]
-      )
-    } else {
-      result = await pool.query(
-        'UPDATE orders SET status = $1 WHERE id = $2 RETURNING *',
-        [status, req.params.id]
-      )
-    }
+    const result = await pool.query(
+      'UPDATE orders SET status = $1 WHERE id = $2 RETURNING *',
+      [status, req.params.id]
+    )
     res.json(result.rows[0])
   } catch (err) {
     res.status(500).json({ error: 'Error al actualizar estado' })
+  }
+})
+
+router.patch('/:id/accept', authenticateToken, requireRole('delivery'), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const result = await pool.query(
+      'UPDATE orders SET status = $1, delivery_id = $2 WHERE id = $3 RETURNING *',
+      [OrderStatus.IN_DELIVERY, req.user!.id, req.params.id]
+    )
+    
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Orden no encontrada' })
+      return
+    }
+
+    res.json(result.rows[0])
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Error al aceptar orden' })
   }
 })
 

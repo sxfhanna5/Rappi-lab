@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
+import { supabase } from '../supabase'
 import DeliveryMap from '../components/DeliveryMap'
 import './Dashboard.css'
 
 interface Order {
   id: string
+  store_id?: string
   store_name?: string
   status: string
   created_at: string
@@ -14,6 +16,8 @@ interface Order {
 interface OrderDetail extends Order {
   destination_lat?: number
   destination_lng?: number
+  delivery_lat?: number
+  delivery_lng?: number
   items?: Array<{
     id: string
     product_name: string
@@ -68,13 +72,34 @@ export default function Dashboard() {
 
   const acceptOrder = async (orderId: string) => {
     try {
-      await api.patch(`/api/orders/${orderId}/status`, { status: 'En entrega' })
+      await api.patch(`/api/orders/${orderId}/accept`)
       const res = await api.get(`/api/orders/${orderId}`)
-      setActiveDelivery(res.data)
+      const orderData = res.data
+      setActiveDelivery(orderData)
       setSelectedOrder(null)
       setOrderDetail(null)
       setDelivered(false)
       loadData()
+
+      // Notificar a la tienda del cambio de estado
+       if (orderData.store_id) {
+         const storeChannel = supabase.channel(`store:${orderData.store_id}`)
+         await storeChannel.send({
+           type: 'broadcast',
+           event: 'order-status-update',
+           payload: { orderId, status: 'En entrega' }
+         })
+         supabase.removeChannel(storeChannel)
+       }
+
+       // Notificar al consumidor
+       const orderChannel = supabase.channel(`order:${orderId}`)
+       await orderChannel.send({
+         type: 'broadcast',
+         event: 'order-accepted',
+         payload: { orderId, status: 'En entrega' }
+       })
+       supabase.removeChannel(orderChannel)
     } catch (err) {
       console.error('Error al aceptar orden:', err)
     }
@@ -88,6 +113,16 @@ export default function Dashboard() {
   const handleDelivered = () => {
     setDelivered(true)
     loadData()
+
+    // Notificar a la tienda que se entregó
+    if (activeDelivery?.store_id) {
+      const storeChannel = supabase.channel(`store:${activeDelivery.store_id}`)
+      storeChannel.send({
+        type: 'broadcast',
+        event: 'order-status-update',
+        payload: { orderId: activeDelivery.id, status: 'Entregado' }
+      })
+    }
 
     setTimeout(() => {
       setActiveDelivery(null)
@@ -146,6 +181,11 @@ export default function Dashboard() {
                     lat: activeDelivery.destination_lat,
                     lng: activeDelivery.destination_lng
                   }}
+                  initialPosition={
+                    activeDelivery.delivery_lat && activeDelivery.delivery_lng
+                      ? { lat: activeDelivery.delivery_lat, lng: activeDelivery.delivery_lng }
+                      : null
+                  }
                   onDelivered={handleDelivered}
                 />
               ) : (

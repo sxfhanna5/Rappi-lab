@@ -78,6 +78,20 @@ export default function Orders() {
       setDeliveryPosition({ lat, lng })
     })
 
+    channel.on('broadcast', { event: 'order-accepted' }, () => {
+      loadOrders()
+      if (selectedOrder) {
+        loadOrderDetail(selectedOrder.id)
+      }
+    })
+
+    channel.on('broadcast', { event: 'order-status-update' }, () => {
+      loadOrders()
+      if (selectedOrder) {
+        loadOrderDetail(selectedOrder.id)
+      }
+    })
+
     channel.on('broadcast', { event: 'order-delivered' }, () => {
       setArrived(true)
       loadOrders()
